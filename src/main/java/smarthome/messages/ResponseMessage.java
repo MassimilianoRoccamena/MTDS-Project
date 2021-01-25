@@ -1,16 +1,14 @@
-package SmartHome.Messages;
+package smarthome.messages;
 
 import java.io.Serializable;
 
 public class ResponseMessage implements Serializable {
     boolean arg;
     private String message;
-    private float data;
 
-    public ResponseMessage(boolean arg, String message, float data) {
+    public ResponseMessage(boolean arg, String message) {
         this.arg = arg;
         this.message = message;
-        this.data = data;
     }
 
     public String getMessage() {
@@ -29,11 +27,4 @@ public class ResponseMessage implements Serializable {
         this.arg = arg;
     }
 
-    public float getData() {
-        return data;
-    }
-
-    public void setData(float data) {
-        this.data = data;
-    }
 }

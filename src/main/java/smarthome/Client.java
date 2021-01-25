@@ -1,18 +1,16 @@
-package SmartHome;
+package smarthome;
 
 import akka.actor.*;
-import SmartHome.Messages.ActivateMessage;
-import SmartHome.Messages.MessageType;
-import SmartHome.Messages.RequestMessage;
-import SmartHome.Messages.ResponseMessage;
+import smarthome.messages.ActivateMessage;
+import smarthome.messages.MessageType;
+import smarthome.messages.RequestMessage;
+import smarthome.messages.ResponseMessage;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static akka.pattern.Patterns.ask;
 
 public class Client extends AbstractActor {
     private ActorSelection server;

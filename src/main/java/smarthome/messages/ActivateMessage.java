@@ -1,4 +1,4 @@
-package SmartHome.Messages;
+package smarthome.messages;
 
 public class ActivateMessage {
 }

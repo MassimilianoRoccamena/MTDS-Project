@@ -1,9 +1,9 @@
-package SmartHome.Home;
+package smarthome.home;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import SmartHome.Messages.ActivateMessage;
-import SmartHome.Messages.RequestMessage;
-import SmartHome.Messages.ResponseMessage;
+import smarthome.messages.ActivateMessage;
+import smarthome.messages.RequestMessage;
+import smarthome.messages.ResponseMessage;
 
 public class AC extends Appliance {
 
@@ -17,17 +17,20 @@ public class AC extends Appliance {
 
     private void activate(ActivateMessage message){
         System.out.println("Air Conditioning activated!");
+        this.system = getContext().getSystem();
+        this.durationMilli = 10000;
+        this.isOn = false;
         this.timableFunctioning = true;
         this.server = sender();
     }
 
     @Override
-    public void notifyStop(boolean timer) {
-        server.tell(new ResponseMessage(timer, "The air conditioning has stopped its execution.", 0), self());
+    public void notifyStop(boolean timer, ActorRef sender) {
+        sender.tell(new ResponseMessage(timer, "The air conditioning has stopped its execution."), self());
     }
     @Override
     public void notifyStart(boolean timer) {
-        sender().tell(new ResponseMessage(timer, "The air conditioning has started working!", this.getConsumption()),self());
+        sender().tell(new ResponseMessage(timer, "The air conditioning has started working!"),self());
     }
 
     @Override

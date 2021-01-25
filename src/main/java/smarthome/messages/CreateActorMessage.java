@@ -1,4 +1,4 @@
-package SmartHome.Messages;
+package smarthome.messages;
 
 import akka.actor.Props;
 

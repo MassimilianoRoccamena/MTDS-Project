@@ -1,4 +1,4 @@
-package SmartHome.Messages;
+package smarthome.messages;
 
 public enum MessageType {
     CHANGETEMPERATURE, GETCONSUMPTION, SWITCHMACHINE, MACHINELIST

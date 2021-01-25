@@ -1,6 +1,4 @@
-package SmartHome.Messages;
-
-import SmartHome.Messages.MessageType;
+package smarthome.messages;
 
 import java.io.Serializable;
 
