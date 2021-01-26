@@ -20,6 +20,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ControlPanel extends AbstractActor {
     private final Map<String, ActorRef> appliances = new HashMap<>();
+    private float desideredTemperature = 20;
     private final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
     private final static SupervisorStrategy strategy =
             new OneForOneStrategy(
@@ -69,13 +70,45 @@ public class ControlPanel extends AbstractActor {
     private float getTemperature() throws InterruptedException, TimeoutException{
         ActorRef termostat = this.appliances.get("Termostat");
         scala.concurrent.Future<Object> waitingForAppliance = ask(termostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
-        float temperature = (Float) waitingForAppliance.result(timeout, null);
-        return temperature;
+        return (Float) waitingForAppliance.result(timeout, null);
+    }
+    private boolean checkConflict(ActorRef appliance) throws InterruptedException, TimeoutException{
+        ActorRef termostat = this.appliances.get("Termostat");
+        ActorRef ac = this.appliances.get("AirConditioning");
+        ActorRef check;
+        boolean conflict;
+        if(appliance.equals(termostat)){
+            check = ac;
+        }else {
+            check = termostat;
+        }
+        scala.concurrent.Future<Object> waitingForState = ask(check, new RequestMessage(MessageType.MACHINELIST, null), 5000);
+        String result =(String) waitingForState.result(timeout, null);
+        if(result.equals("OFF")){
+            conflict = false;
+        }else {
+            conflict = true;
+        }
+        return conflict;
     }
 
     //Function called when a time Appliance stops working
-    private void applianceManage(ResponseMessage message){
-        System.out.println(message.getMessage());
+    private void applianceManage(ResponseMessage message) throws TimeoutException, InterruptedException{
+        String responseMessage = message.getMessage();
+        if(responseMessage.equals("-1") || responseMessage.equals("1")){
+            float actualTemperature = getTemperature();
+            if(actualTemperature < 10 && (getTemperature() <= desideredTemperature && responseMessage.equals("-1"))){
+                switchAppliance("AirConditioning");
+            }else if(actualTemperature > 25 || (getTemperature() >= desideredTemperature && responseMessage.equals("1"))){
+                switchAppliance("Termostat");
+            }else {
+                ActorRef termostat = this.appliances.get("Termostat");
+                termostat.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, message.getMessage()),self());
+            }
+            System.out.println("The temperature is now " + actualTemperature + "°C");
+        }else {
+            System.out.println(message.getMessage());
+        }
     }
 
     //Functions that communicate with the appliances
@@ -94,6 +127,7 @@ public class ControlPanel extends AbstractActor {
         }
         list+= "---------------------------------\n";
         list+= "TOTAL CONSUMPTION: " + totalConsumption + "W\n";
+        list+= "DESIDERED TEMPERATURE: " + desideredTemperature + "°C\n";
         list+= "TEMPERATURE: " + this.getTemperature() + "°C\n";
         return new ResponseMessage(false, list);
     }
@@ -105,22 +139,32 @@ public class ControlPanel extends AbstractActor {
             response = "[ERROR] The appliance does not exist\n";
             error = true;
         }else {
-            scala.concurrent.Future<Object> waitingForAppliance = ask(appliance, new RequestMessage(MessageType.SWITCHMACHINE, null), 5000);
-            ResponseMessage applianceMessage =(ResponseMessage) waitingForAppliance.result(timeout, null);
-            response = applianceMessage.getMessage() + "\n";
+            if(checkConflict(appliance)){
+                String opposite = "Air Conditioning";
+                if(name.equals(opposite)){
+                    opposite = "Termostat";
+                }
+                response = "[ERROR] " + name + " cannot be turn on because the " + opposite + " is working\n";
+            }else {
+                scala.concurrent.Future<Object> waitingForAppliance = ask(appliance, new RequestMessage(MessageType.SWITCHMACHINE, null), 5000);
+                ResponseMessage applianceMessage =(ResponseMessage) waitingForAppliance.result(timeout, null);
+                response = applianceMessage.getMessage() + "\n";
+            }
         }
         response += getAppliancesList().getMessage();
         System.out.println(response);
         return new ResponseMessage(error, response);
     }
     private ResponseMessage changeTemperature(String newTemperature) throws InterruptedException, TimeoutException{
-        Float actualTemperature = getTemperature();
-        Float newTemp = Float.parseFloat(newTemperature);
+        float actualTemperature = getTemperature();
+        float newTemp = Float.parseFloat(newTemperature);
         ResponseMessage response;
         if(newTemp <= actualTemperature - 1 && newTemp > 10){
            response = switchAppliance("AirCondtioning");
+           this.desideredTemperature = newTemp;
         }else if(newTemp >= actualTemperature + 1 && newTemp < 30){
            response = switchAppliance("Termostat");
+           this.desideredTemperature = newTemp;
         }else{
             response = new ResponseMessage(false, "[ERROR] The temperature inserted is not valid");
         }

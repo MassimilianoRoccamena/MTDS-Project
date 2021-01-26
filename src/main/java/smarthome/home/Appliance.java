@@ -76,7 +76,7 @@ public abstract class Appliance extends AbstractActor {
                         .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), new Runnable() {
                             @Override
                             public void run() {
-
+                                notifyChangeTemperature(server);
                             }
                         },system.dispatcher());
             }

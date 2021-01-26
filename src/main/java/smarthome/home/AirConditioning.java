@@ -8,7 +8,7 @@ public class AirConditioning extends Appliance {
 
     @Override
     public void activate(ActivateMessage message) {
-        sender().tell(new ResponseMessage(false, "Air conditioning connected and activated"), self());
+        sender().tell(new ResponseMessage(false, "[LOG] Air conditioning connected and activated"), self());
         this.system = getContext().getSystem();
         this.durationMilli = 10000;
         this.isOn = false;
@@ -19,11 +19,11 @@ public class AirConditioning extends Appliance {
 
     @Override
     public void notifyStop(boolean timer, ActorRef sender) {
-        sender.tell(new ResponseMessage(timer, "Air conditioning has stopped its execution!"), self());
+        sender.tell(new ResponseMessage(timer, "[LOG] Air conditioning has stopped its execution!"), self());
     }
     @Override
     public void notifyStart(boolean timer) {
-        sender().tell(new ResponseMessage(timer, "Air Conditioning has started working!"),self());
+        sender().tell(new ResponseMessage(timer, "[LOG] Air Conditioning has started working!"),self());
     }
 
     @Override

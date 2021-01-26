@@ -26,14 +26,14 @@ public class Termostat extends Appliance{
                 sender().tell(this.temperature, self());
                 break;
             case CHANGETEMPERATURE:
-                this.temperature = Float.parseFloat(message.getArg());
+                this.temperature += Float.parseFloat(message.getArg());
                 break;
         }
     }
 
     @Override
     public void activate(ActivateMessage message) {
-        sender().tell(new ResponseMessage(false, "Termostat connected and activated"), self());
+        sender().tell(new ResponseMessage(false, "[LOG] Termostat connected and activated"), self());
         this.system = getContext().getSystem();
         this.functionWithTimer = false;
         this.functionWithTemperature = true;
@@ -45,12 +45,16 @@ public class Termostat extends Appliance{
 
     @Override
     public void notifyStop(boolean timer, ActorRef sender) {
-        sender.tell(new ResponseMessage(timer, "The heating system has stopped its execution."), self());
+        sender.tell(new ResponseMessage(timer, "[LOG] The heating system has stopped its execution."), self());
     }
 
     @Override
     public void notifyStart(boolean timer) {
-        sender().tell(new ResponseMessage(timer, "The heating system has started working!"),self());
+        sender().tell(new ResponseMessage(timer, "[LOG] The heating system has started working!"),self());
+    }
+    @Override
+    public void notifyChangeTemperature(ActorRef sender) {
+        sender.tell(new ResponseMessage(false, "1"),self());
     }
 
     public static Props props() {
