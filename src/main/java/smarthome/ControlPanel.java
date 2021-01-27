@@ -1,5 +1,6 @@
 package smarthome;
 
+import scala.concurrent.duration.Duration;
 import smarthome.home.AirConditioning;
 import akka.actor.*;
 import akka.japi.pf.DeciderBuilder;
@@ -8,27 +9,31 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import java.io.File;
-import java.time.Duration;
 
-import smarthome.home.Termostat;
+import smarthome.home.Thermostat;
 import smarthome.messages.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import static akka.pattern.Patterns.ask;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ControlPanel extends AbstractActor {
+public class ControlPanel extends AbstractActor{
     private final Map<String, ActorRef> appliances = new HashMap<>();
-    private float desideredTemperature = 20;
+    private float desiredTemperature = 20;
     private final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
-    private final static SupervisorStrategy strategy =
-            new OneForOneStrategy(
-                    10,
-                    Duration.ofMinutes(1),
+    private final SupervisorStrategy strategy =
+            new CustomSupervisorStrategy(10,
+                    timeout,
+                    true,
                     DeciderBuilder
-                            .match(InterruptedException.class, e -> (SupervisorStrategy.Directive) SupervisorStrategy.restart())
-                            .build());
+                            .match(Exception.class, e -> (SupervisorStrategy.Directive) SupervisorStrategy.restart())
+                            .build()
+                    );
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -41,6 +46,7 @@ public class ControlPanel extends AbstractActor {
     public SupervisorStrategy supervisorStrategy() {
         return strategy;
     }
+
 
     //Function that handles the requests coming from the client
     private void onRequest(RequestMessage message) throws InterruptedException, TimeoutException{
@@ -68,42 +74,50 @@ public class ControlPanel extends AbstractActor {
        this.appliances.put(message.getName(), ref);
     }
     private float getTemperature() throws InterruptedException, TimeoutException{
-        ActorRef termostat = this.appliances.get("Termostat");
-        scala.concurrent.Future<Object> waitingForAppliance = ask(termostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
+        ActorRef thermostat = this.appliances.get("Thermostat");
+        scala.concurrent.Future<Object> waitingForAppliance = ask(thermostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
         return (Float) waitingForAppliance.result(timeout, null);
     }
-    private boolean checkConflict(ActorRef appliance) throws InterruptedException, TimeoutException{
-        ActorRef termostat = this.appliances.get("Termostat");
+    private boolean checkConflict(ActorRef appliance) {
+        ActorRef thermostat = this.appliances.get("Thermostat");
         ActorRef ac = this.appliances.get("AirConditioning");
         ActorRef check;
         boolean conflict;
-        if(appliance.equals(termostat)){
+        if(appliance.equals(thermostat)){
             check = ac;
         }else {
-            check = termostat;
+            check = thermostat;
         }
-        scala.concurrent.Future<Object> waitingForState = ask(check, new RequestMessage(MessageType.MACHINELIST, null), 5000);
-        String result =(String) waitingForState.result(timeout, null);
-        if(result.equals("OFF")){
-            conflict = false;
-        }else {
-            conflict = true;
+        try {
+            scala.concurrent.Future<Object> waitingForState = ask(check, new RequestMessage(MessageType.MACHINELIST, null), 5000);
+            String result =(String) waitingForState.result(timeout, null);
+            conflict = !result.equals("OFF");
+        }catch (Exception e){
+            System.out.println("[ERROR] Could not find if there is a conflict between appliances");
+            return true;
         }
         return conflict;
     }
 
     //Function called when a time Appliance stops working
-    private void applianceManage(ResponseMessage message) throws TimeoutException, InterruptedException{
+    private void applianceManage(ResponseMessage message) {
         String responseMessage = message.getMessage();
+        float actualTemperature;
+        try {
+             actualTemperature = getTemperature();
+        }catch (Exception e){
+            actualTemperature = 0;
+            System.out.println("[ERROR] Something went wrong with getting the temperature");
+        }
         if(responseMessage.equals("-1") || responseMessage.equals("1")){
-            float actualTemperature = getTemperature();
-            if(actualTemperature < 10 && (getTemperature() <= desideredTemperature && responseMessage.equals("-1"))){
+
+            if(actualTemperature < 10 || (actualTemperature <= desiredTemperature && responseMessage.equals("-1"))){
                 switchAppliance("AirConditioning");
-            }else if(actualTemperature > 25 || (getTemperature() >= desideredTemperature && responseMessage.equals("1"))){
-                switchAppliance("Termostat");
+            }else if(actualTemperature > 25 || (actualTemperature >= desiredTemperature && responseMessage.equals("1"))){
+                switchAppliance("Thermostat");
             }else {
-                ActorRef termostat = this.appliances.get("Termostat");
-                termostat.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, message.getMessage()),self());
+                ActorRef thermostat = this.appliances.get("Thermostat");
+                thermostat.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, message.getMessage()),self());
             }
             System.out.println("The temperature is now " + actualTemperature + "°C");
         }else {
@@ -112,26 +126,40 @@ public class ControlPanel extends AbstractActor {
     }
 
     //Functions that communicate with the appliances
-    private ResponseMessage getAppliancesList() throws InterruptedException,TimeoutException{
-        String list = "---------APPLIANCES LIST---------\n";
+    private ResponseMessage getAppliancesList() {
+        StringBuilder list = new StringBuilder("\n---------APPLIANCES LIST---------\n");
+
         float totalConsumption = 0;
-        list+= "NAME\t\t\tSTATE\tCONSUMPTION\n";
+        list.append("NAME\t\t\t\tSTATE\tCONSUMPTION\n");
         for(Map.Entry<String, ActorRef> ref: this.appliances.entrySet()){
-            list += ref.getKey() + "\t";
-            scala.concurrent.Future<Object> waitingForState = ask(ref.getValue(), new RequestMessage(MessageType.MACHINELIST, null), 5000);
-            list += waitingForState.result(timeout, null) + "\t\t";
-            scala.concurrent.Future<Object> waitingForConsumption = ask(ref.getValue(), new RequestMessage(MessageType.GETCONSUMPTION, null), 5000);
-            float consumption = (Float) waitingForConsumption.result(timeout, null);
-            totalConsumption += consumption;
-            list += consumption  + "W\n";
+            int nameLength = 16;
+            String space = " ";
+            String repeatedSpace = IntStream.range(0, nameLength-ref.getKey().length()).mapToObj(i->space).collect(Collectors.joining(""));
+            list.append(ref.getKey()).append(repeatedSpace).append("\t");
+            try{
+                scala.concurrent.Future<Object> waitingForState = ask(ref.getValue(), new RequestMessage(MessageType.MACHINELIST, null), 5000);
+                list.append(waitingForState.result(timeout, null)).append("\t\t");
+                scala.concurrent.Future<Object> waitingForConsumption = ask(ref.getValue(), new RequestMessage(MessageType.GETCONSUMPTION, null), 5000);
+                float consumption = (Float) waitingForConsumption.result(timeout, null);
+                totalConsumption += consumption;
+                list.append(consumption).append("W\n");
+            }catch (Exception e){
+                list = new StringBuilder("[ERROR] Something went wrong getting the appliances list");
+                return new ResponseMessage(false, list.toString());
+            }
         }
-        list+= "---------------------------------\n";
-        list+= "TOTAL CONSUMPTION: " + totalConsumption + "W\n";
-        list+= "DESIDERED TEMPERATURE: " + desideredTemperature + "°C\n";
-        list+= "TEMPERATURE: " + this.getTemperature() + "°C\n";
-        return new ResponseMessage(false, list);
+        list.append("---------------------------------\n");
+        list.append("TOTAL CONSUMPTION: ").append(totalConsumption).append("W\n");
+        list.append("DESIRED TEMPERATURE: ").append(this.desiredTemperature).append("°C\n");
+        try {
+            list.append("TEMPERATURE: ").append(this.getTemperature()).append("°C\n");
+        }catch (Exception e){
+            list = new StringBuilder("[ERROR] Something went wrong getting the temperature.");
+            return new ResponseMessage(false, list.toString());
+        }
+        return new ResponseMessage(false, list.toString());
     }
-    private ResponseMessage switchAppliance(String name) throws InterruptedException, TimeoutException{
+    private ResponseMessage switchAppliance(String name) {
         String response;
         boolean error = false;
         ActorRef appliance = this.appliances.get(name);
@@ -141,14 +169,20 @@ public class ControlPanel extends AbstractActor {
         }else {
             if(checkConflict(appliance)){
                 String opposite = "Air Conditioning";
-                if(name.equals(opposite)){
-                    opposite = "Termostat";
+                if(!name.equals(opposite)){
+                    opposite = "Thermostat";
                 }
                 response = "[ERROR] " + name + " cannot be turn on because the " + opposite + " is working\n";
             }else {
-                scala.concurrent.Future<Object> waitingForAppliance = ask(appliance, new RequestMessage(MessageType.SWITCHMACHINE, null), 5000);
-                ResponseMessage applianceMessage =(ResponseMessage) waitingForAppliance.result(timeout, null);
-                response = applianceMessage.getMessage() + "\n";
+                try {
+                    scala.concurrent.Future<Object> waitingForAppliance = ask(appliance, new RequestMessage(MessageType.SWITCHMACHINE, null), 5000);
+                    ResponseMessage applianceMessage =(ResponseMessage) waitingForAppliance.result(timeout, null);
+                    response = applianceMessage.getMessage() + "\n";
+                }catch (Exception e){
+                    response = "[ERROR] Something went wrong with switching the appliance";
+                    return new ResponseMessage(false, response);
+                }
+
             }
         }
         response += getAppliancesList().getMessage();
@@ -160,16 +194,18 @@ public class ControlPanel extends AbstractActor {
         float newTemp = Float.parseFloat(newTemperature);
         ResponseMessage response;
         if(newTemp <= actualTemperature - 1 && newTemp > 10){
-           response = switchAppliance("AirCondtioning");
-           this.desideredTemperature = newTemp;
+           response = switchAppliance("AirConditioning");
+           this.desiredTemperature = newTemp;
         }else if(newTemp >= actualTemperature + 1 && newTemp < 30){
-           response = switchAppliance("Termostat");
-           this.desideredTemperature = newTemp;
+           response = switchAppliance("Thermostat");
+           this.desiredTemperature = newTemp;
         }else{
             response = new ResponseMessage(false, "[ERROR] The temperature inserted is not valid");
         }
         return response;
     }
+
+
 
     static Props props() {
         return Props.create(ControlPanel.class);
@@ -182,6 +218,6 @@ public class ControlPanel extends AbstractActor {
         ActorRef supervisor = sys.actorOf(ControlPanel.props(), "controlPanel");
         System.out.println("The control panel is functional");
         supervisor.tell(new CreateActorMessage(AirConditioning.props(), "AirConditioning"), ActorRef.noSender());
-        supervisor.tell(new CreateActorMessage(Termostat.props(), "Termostat"), ActorRef.noSender());
+        supervisor.tell(new CreateActorMessage(Thermostat.props(), "Thermostat"), ActorRef.noSender());
     }
 }

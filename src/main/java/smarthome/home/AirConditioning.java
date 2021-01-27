@@ -8,22 +8,13 @@ public class AirConditioning extends Appliance {
 
     @Override
     public void activate(ActivateMessage message) {
-        sender().tell(new ResponseMessage(false, "[LOG] Air conditioning connected and activated"), self());
+        this.server = getContext().getParent();
+        server.tell(new ResponseMessage(false, "[LOG] Air conditioning connected and activated"), self());
         this.system = getContext().getSystem();
-        this.durationMilli = 10000;
+        this.name = "Air Conditioning";
         this.isOn = false;
         this.functionWithTimer = false;
         this.functionWithTemperature = true;
-        this.server = sender();
-    }
-
-    @Override
-    public void notifyStop(boolean timer, ActorRef sender) {
-        sender.tell(new ResponseMessage(timer, "[LOG] Air conditioning has stopped its execution!"), self());
-    }
-    @Override
-    public void notifyStart(boolean timer) {
-        sender().tell(new ResponseMessage(timer, "[LOG] Air Conditioning has started working!"),self());
     }
 
     @Override
@@ -31,10 +22,7 @@ public class AirConditioning extends Appliance {
         sender.tell(new ResponseMessage(false, "-1"),self());
     }
 
-    @Override
-    public void postRestart(Throwable reason) throws Exception, Exception {
-        System.out.println("The Air Conditioning system has been restarted");
-    }
+
 
     public static Props props() {
         return Props.create(AirConditioning.class);

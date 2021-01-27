@@ -1,17 +1,18 @@
 package smarthome.home;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
+import akka.actor.*;
+import scala.Int;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.RequestMessage;
-import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
+import smarthome.messages.ResponseMessage;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Random;
 
 public abstract class Appliance extends AbstractActor {
     public boolean isOn;
+    public String name;
     public boolean functionWithTimer;
     public int durationMilli;
     public boolean functionWithTemperature;
@@ -28,7 +29,7 @@ public abstract class Appliance extends AbstractActor {
     }
 
     public float getConsumption(){
-        Float cons = 0.0f;
+        float cons = 0.0f;
         if(this.isOn) {
             Random random = new Random();
             cons = random.nextInt(49)+1 + random.nextFloat();
@@ -60,39 +61,44 @@ public abstract class Appliance extends AbstractActor {
             if(this.functionWithTimer){
                functioningProcess = system
                        .scheduler()
-                       .scheduleOnce(Duration.ofMillis(durationMilli), new Runnable() {
-                           @Override
-                           public void run() {
-                               isOn = false;
-                               notifyStop(functionWithTimer, server);
-                           }
+                       .scheduleOnce(Duration.ofMillis(durationMilli), () -> {
+                           isOn = false;
+                           notifyStop(functionWithTimer, server);
                        },system.dispatcher());
 
-                ;
             }
             if(this.functionWithTemperature){
                 functioningProcess = system
                         .scheduler()
-                        .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), new Runnable() {
-                            @Override
-                            public void run() {
-                                notifyChangeTemperature(server);
-                            }
-                        },system.dispatcher());
+                        .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), () -> notifyChangeTemperature(server),system.dispatcher());
             }
         }
     }
 
     //Functions to override
     public void notifyStop(boolean timer, ActorRef sender){
+        sender.tell(new ResponseMessage(timer, "[LOG] " + this.name + " has stopped its execution!"), self());
+    }
+    public void notifyStart(boolean timer){
+        sender().tell(new ResponseMessage(timer, "[LOG] "+ this.name + " has started working!"),self());
 
     }
-    public void notifyStart(boolean timer){}
     public void notifyChangeTemperature(ActorRef sender){}
-    public void activate(ActivateMessage message){};
+    public void activate(ActivateMessage message){}
 
     @Override
-    public void postStop() throws Exception, Exception {
-        throw new InterruptedException();
+    public void preRestart(Throwable reason, Optional<Object> message){
+        if(functioningProcess != null){
+            functioningProcess.cancel();
+        }
+        System.out.println("[LOG] " + this.name + " is being restarted");
     }
+
+    @Override
+    public void postRestart(Throwable reason){
+        activate(new ActivateMessage());
+        System.out.println("[LOG] "+ this.name + " has been restarted");
+    }
+
+
 }

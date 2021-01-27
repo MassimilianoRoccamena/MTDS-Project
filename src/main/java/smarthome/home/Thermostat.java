@@ -6,7 +6,7 @@ import smarthome.messages.ActivateMessage;
 import smarthome.messages.RequestMessage;
 import smarthome.messages.ResponseMessage;
 
-public class Termostat extends Appliance{
+public class Thermostat extends Appliance{
 
     private float temperature;
 
@@ -33,8 +33,9 @@ public class Termostat extends Appliance{
 
     @Override
     public void activate(ActivateMessage message) {
-        sender().tell(new ResponseMessage(false, "[LOG] Termostat connected and activated"), self());
+        sender().tell(new ResponseMessage(false, "[LOG] Thermostat connected and activated"), self());
         this.system = getContext().getSystem();
+        this.name = "Thermostat";
         this.functionWithTimer = false;
         this.functionWithTemperature = true;
         this.durationMilli = 10000;
@@ -44,20 +45,11 @@ public class Termostat extends Appliance{
     }
 
     @Override
-    public void notifyStop(boolean timer, ActorRef sender) {
-        sender.tell(new ResponseMessage(timer, "[LOG] The heating system has stopped its execution."), self());
-    }
-
-    @Override
-    public void notifyStart(boolean timer) {
-        sender().tell(new ResponseMessage(timer, "[LOG] The heating system has started working!"),self());
-    }
-    @Override
     public void notifyChangeTemperature(ActorRef sender) {
         sender.tell(new ResponseMessage(false, "1"),self());
     }
 
     public static Props props() {
-        return Props.create(Termostat.class);
+        return Props.create(Thermostat.class);
     }
 }

@@ -59,8 +59,13 @@ public class Client extends AbstractActor {
     private void chooseTemperature(){
         System.out.println("Insert the desired temperature");
         Scanner scanner = new Scanner(System.in);
-        Float temperature = scanner.nextFloat();
-        server.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, temperature.toString()),self());
+        try{
+            float temperature = scanner.nextFloat();
+            server.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, Float.toString(temperature)),self());
+        }catch (Exception e){
+            System.out.println("[ERROR] Insert a temperature in the correct format (e.g. 15,5)");
+            chooseTemperature();
+        }
     }
 
     private void showMessage(ResponseMessage message){
@@ -81,7 +86,7 @@ public class Client extends AbstractActor {
     public static void main(String[] args) {
         Config conf =
                 ConfigFactory.parseFile(new File("config/client.conf"));
-        ActorSystem sys = ActorSystem.create("Client", conf);
+        ActorSystem sys = ActorSystem.create("Client1", conf);
         ActorRef client = sys.actorOf(Client.props(), "clientActor");
         final ExecutorService exec = Executors.newFixedThreadPool(1);
         exec.submit(() -> client.tell(new ActivateMessage(), ActorRef.noSender()));

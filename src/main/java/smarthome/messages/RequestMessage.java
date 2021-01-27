@@ -15,17 +15,11 @@ public class RequestMessage implements Serializable {
         return type;
     }
 
-    public void setType(MessageType type) {
-        this.type = type;
-    }
 
     public String getArg() {
         return arg;
     }
 
-    public void setArg(String arg) {
-        this.arg = arg;
-    }
 
 
 }

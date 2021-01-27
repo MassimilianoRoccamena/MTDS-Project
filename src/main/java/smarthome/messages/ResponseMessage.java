@@ -15,16 +15,10 @@ public class ResponseMessage implements Serializable {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public boolean isArg() {
         return arg;
     }
 
-    public void setArg(boolean arg) {
-        this.arg = arg;
-    }
+
 
 }
