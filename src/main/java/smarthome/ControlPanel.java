@@ -1,6 +1,5 @@
 package smarthome;
 
-import scala.concurrent.duration.Duration;
 import smarthome.home.AirConditioning;
 import akka.actor.*;
 import akka.japi.pf.DeciderBuilder;
@@ -10,7 +9,9 @@ import com.typesafe.config.ConfigFactory;
 
 import java.io.File;
 
+import smarthome.home.Television;
 import smarthome.home.Thermostat;
+import smarthome.home.WashingMachine;
 import smarthome.messages.*;
 
 import java.util.HashMap;
@@ -216,8 +217,10 @@ public class ControlPanel extends AbstractActor{
                 ConfigFactory.parseFile(new File("config/server.conf"));
         ActorSystem sys = ActorSystem.create("Server", conf);
         ActorRef supervisor = sys.actorOf(ControlPanel.props(), "controlPanel");
-        System.out.println("The control panel is functional");
+        System.out.println("[LOG] The control panel is functional");
         supervisor.tell(new CreateActorMessage(AirConditioning.props(), "AirConditioning"), ActorRef.noSender());
         supervisor.tell(new CreateActorMessage(Thermostat.props(), "Thermostat"), ActorRef.noSender());
+        supervisor.tell(new CreateActorMessage(WashingMachine.props(), "WashingMachine"), ActorRef.noSender());
+        supervisor.tell(new CreateActorMessage(Television.props(), "Television"), ActorRef.noSender());
     }
 }

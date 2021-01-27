@@ -22,8 +22,6 @@ public class AirConditioning extends Appliance {
         sender.tell(new ResponseMessage(false, "-1"),self());
     }
 
-
-
     public static Props props() {
         return Props.create(AirConditioning.class);
     }
