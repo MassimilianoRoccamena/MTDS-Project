@@ -1,6 +1,7 @@
 package config;
 
 import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,14 +16,12 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 @Configuration
 public class KafkaProducerConfig {
 
-    private static final String bootstrapAddress = "localhost:9092";
-
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
           ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, 
-          KafkaProducerConfig.bootstrapAddress);
+          bootstrapAddress);
         configProps.put(
           ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, 
           StringSerializer.class);

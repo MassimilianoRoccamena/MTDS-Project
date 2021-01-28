@@ -1,6 +1,7 @@
 package config;
 
 import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,18 +18,15 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 @Configuration
 public class KafkaConsumerConfig {
 
-    private static final String bootstrapAddress = "localhost:9092";
-    private static final String groupId = "groupA";
-
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(
           ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, 
-          KafkaConsumerConfig.bootstrapAddress);
+          bootstrapAddress);
         props.put(
           ConsumerConfig.GROUP_ID_CONFIG, 
-          KafkaConsumerConfig.groupId);
+          "groupA");
         props.put(
           ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, 
           StringDeserializer.class);
