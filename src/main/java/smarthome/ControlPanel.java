@@ -50,7 +50,7 @@ public class ControlPanel extends AbstractActor{
 
 
     //Function that handles the requests coming from the client
-    private void onRequest(RequestMessage message) throws InterruptedException, TimeoutException{
+    private void onRequest(RequestMessage message) {
         ResponseMessage response;
         switch (message.getType()){
             case MACHINELIST:
@@ -74,10 +74,16 @@ public class ControlPanel extends AbstractActor{
        ref.tell(new ActivateMessage(), self());
        this.appliances.put(message.getName(), ref);
     }
-    private float getTemperature() throws InterruptedException, TimeoutException{
-        ActorRef thermostat = this.appliances.get("Thermostat");
-        scala.concurrent.Future<Object> waitingForAppliance = ask(thermostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
-        return (Float) waitingForAppliance.result(timeout, null);
+    private float getTemperature() {
+        try {
+            ActorRef thermostat = this.appliances.get("Thermostat");
+            scala.concurrent.Future<Object> waitingForAppliance = ask(thermostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
+            return (Float) waitingForAppliance.result(timeout, null);
+        }catch (Exception e){
+            System.out.println("[ERROR] Problem encountered with getting the temperature!");
+            return 0.0f;
+        }
+
     }
     private boolean checkConflict(ActorRef appliance) {
         ActorRef thermostat = this.appliances.get("Thermostat");
@@ -99,23 +105,22 @@ public class ControlPanel extends AbstractActor{
         }
         return conflict;
     }
-
     //Function called when a time Appliance stops working
     private void applianceManage(ResponseMessage message) {
         String responseMessage = message.getMessage();
-        float actualTemperature;
-        try {
-             actualTemperature = getTemperature();
-        }catch (Exception e){
-            actualTemperature = 0;
-            System.out.println("[ERROR] Something went wrong with getting the temperature");
-        }
+        float actualTemperature = getTemperature();
         if(responseMessage.equals("-1") || responseMessage.equals("1")){
 
             if(actualTemperature < 10 || (actualTemperature <= desiredTemperature && responseMessage.equals("-1"))){
                 switchAppliance("AirConditioning");
+                if(actualTemperature >= desiredTemperature + 1 || actualTemperature <= desiredTemperature - 1){
+                    changeTemperature(Float.toString(desiredTemperature));
+                }
             }else if(actualTemperature > 25 || (actualTemperature >= desiredTemperature && responseMessage.equals("1"))){
                 switchAppliance("Thermostat");
+                if(actualTemperature >= desiredTemperature + 1 || actualTemperature <= desiredTemperature - 1){
+                    changeTemperature(Float.toString(desiredTemperature));
+                }
             }else {
                 ActorRef thermostat = this.appliances.get("Thermostat");
                 thermostat.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, message.getMessage()),self());
@@ -169,8 +174,8 @@ public class ControlPanel extends AbstractActor{
             error = true;
         }else {
             if(checkConflict(appliance)){
-                String opposite = "Air Conditioning";
-                if(!name.equals(opposite)){
+                String opposite = "AirConditioning";
+                if(name.equals(opposite)){
                     opposite = "Thermostat";
                 }
                 response = "[ERROR] " + name + " cannot be turn on because the " + opposite + " is working\n";
@@ -190,7 +195,7 @@ public class ControlPanel extends AbstractActor{
         System.out.println(response);
         return new ResponseMessage(error, response);
     }
-    private ResponseMessage changeTemperature(String newTemperature) throws InterruptedException, TimeoutException{
+    private ResponseMessage changeTemperature(String newTemperature){
         float actualTemperature = getTemperature();
         float newTemp = Float.parseFloat(newTemperature);
         ResponseMessage response;
