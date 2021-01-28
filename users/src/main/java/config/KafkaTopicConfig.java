@@ -4,10 +4,11 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
-import org.apache.kafka.clients.consumer.AdminClientConfig;
+import org.springframework.kafka.core.KafkaAdmin;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Configuration
