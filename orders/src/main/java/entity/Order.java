@@ -10,7 +10,7 @@ import lombok.NonNull;
 
 @Data
 @Entity
-public class DeliveryMan {
+public class Order {
 
     @Id
     @GeneratedValue
@@ -18,6 +18,10 @@ public class DeliveryMan {
     private Long id;
     
     @NonNull
-    @Column(unique = true)
-    private String name;
+    @Column
+    private Long customerId;
+    
+    @NonNull
+    @Column
+    private List<OrderField> fields;
 }

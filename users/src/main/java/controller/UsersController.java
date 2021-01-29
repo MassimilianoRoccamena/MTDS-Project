@@ -3,9 +3,9 @@ package controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import dto.LoginForm;
-import dao.CustomerRepository;
-import entity.Customer;
+import dto.*;
+import dao.*;
+import entity.*;
 
 @RestController
 @RequestMapping("/users")

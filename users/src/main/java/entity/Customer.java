@@ -6,6 +6,7 @@ import javax.persistence.Id;
 import javax.persistence.Column;
 
 import lombok.Data;
+import lombok.NonNull;
 
 import dto.LoginForm;
 
@@ -18,16 +19,13 @@ public class Customer {
     @Column(name = "ID")
     private Long id;
     
+    @NonNull
     @Column(unique = true)
     private String name;
- 
+    
+    @NonNull
     @Column
     private String address;
-
-    public Customer(String name, String address) {
-        this.name = name;
-        this.address = address;
-    }
 
     public static Customer fromDTO(LoginForm loginForm) {
         return new Customer(loginForm.getName(), loginForm.getAddress());

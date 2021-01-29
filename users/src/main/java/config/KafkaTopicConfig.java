@@ -25,11 +25,19 @@ public class KafkaTopicConfig {
     }
     
     @Bean
-    public NewTopic topic1() {
-         return new NewTopic("isCustomerRegistered", 1, (short) 1);
+    public NewTopic topic11() {
+         return new NewTopic("orders:users:isCustomerRegistered", 1, (short) 1);
     }
     @Bean
-    public NewTopic topic2() {
-         return new NewTopic("getCustomerAddress", 1, (short) 1);
+    public NewTopic topic12() {
+         return new NewTopic("users:orders:isCustomerRegistered", 1, (short) 1);
+    }
+    @Bean
+    public NewTopic topic21() {
+         return new NewTopic("orders:users:getCustomerAddress", 1, (short) 1);
+    }
+    @Bean
+    public NewTopic topic22() {
+         return new NewTopic("users:orders:getCustomerAddress", 1, (short) 1);
     }
 }

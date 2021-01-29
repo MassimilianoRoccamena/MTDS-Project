@@ -5,23 +5,27 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.messaging.handler.annotation.SendTo;
+
+import dao.CustomerRepository;
+import entity.Customer;
 
 @Service
 public class UsersService {
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    CustomerRepository customerRepository;
 
     @KafkaListener(topics = "orders:users:isCustomerRegistered")
-    public void isCustomerRegistered(String message) {
-        String response = "1";
-        kafkaTemplate.send("users:orders:isCustomerRegistered", "1");
+    @SendTo("users:orders:isCustomerRegistered")
+    public String isCustomerRegistered(String customerId) {
+        return customerRepository.existsById(customerId);
     }
 
-    @KafkaListener(topics = "orders:user:getCustomerAddress")
-    public void getCustomerAddress(String message) {
-        String response = "1";
-        kafkaTemplate.send("users:orders:getCustomerAddress", "1");
+    @KafkaListener(topics = "orders:users:getCustomerAddress")
+    @SendTo("users:orders:getCustomerAddress")
+    public String getCustomerAddress(String customerId) {
+        Customer customer = customerRepository.findById(customerId);
+        return customer.getAddress();
     }
 }
