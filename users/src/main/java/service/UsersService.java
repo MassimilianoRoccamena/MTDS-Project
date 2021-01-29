@@ -13,15 +13,15 @@ public class UsersService {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @KafkaListener(topics = "users:orders:isCustomerRegistered")
+    @KafkaListener(topics = "orders:users:isCustomerRegistered")
     public void isCustomerRegistered(String message) {
         String response = "1";
-        kafkaTemplate.send("users:orders:isCustomerRegistered_return", "1");
+        kafkaTemplate.send("users:orders:isCustomerRegistered", "1");
     }
 
-    @KafkaListener(topics = "users:orders:getCustomerAddress")
+    @KafkaListener(topics = "orders:user:getCustomerAddress")
     public void getCustomerAddress(String message) {
         String response = "1";
-        kafkaTemplate.send("users:orders:getCustomerAddress_return", "1");
+        kafkaTemplate.send("users:orders:getCustomerAddress", "1");
     }
 }
