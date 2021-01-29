@@ -30,7 +30,7 @@ public class KafkaConsumerConfig {
           bootstrapAddress);
         props.put(
           ConsumerConfig.GROUP_ID_CONFIG, 
-          "groupA");
+          "users");
         props.put(
           ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, 
           StringDeserializer.class);
@@ -42,7 +42,6 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
-
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
