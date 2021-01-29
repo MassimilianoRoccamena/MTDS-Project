@@ -1,5 +1,7 @@
 package service;
 
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +22,14 @@ public class OrdersService {
     @Autowired
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
 
-    public Boolean isCustomerRegistered(String userId) {
+    public Boolean isCustomerRegistered(String userId) throws InterruptedException, ExecutionException {
         ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return Boolean.parseBoolean(response.value());
     }
 
-    public String getCustomerAddress(String userId) {
+    public String getCustomerAddress(String userId) throws InterruptedException, ExecutionException {
         ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
