@@ -9,10 +9,10 @@ import service.*;
 
 @RestController
 @RequestMapping("/orders")
-public class UsersController {
+public class OrdersController {
 
     @Autowired
-    OrderRepository customerRepository;
+    OrderRepository orderRepository;
     @Autowired
     ProductRepository productRepository;
     @Autowired
@@ -20,9 +20,10 @@ public class UsersController {
     
     @PostMapping("/create")
 	public void createOrder(@RequestBody Order order) {
-        Long customerId = order.customerId();
+        Long customerId = order.getCustomerId();
         Boolean validCustomer = ordersService.isCustomerRegistered(customerId);
         String  customerAddress = ordersService.getCustomerAddress(customerId);
-        ordersService.save(order);
+        orderRepository.save(order);
+        //send order + address to shipping
 	}
 }

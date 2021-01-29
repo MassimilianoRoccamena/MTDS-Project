@@ -8,7 +8,7 @@ import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.requestreply.RequestReplyFuture;
 
-import org.apache.kafka.clients.consumer.ProducerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 @Service
@@ -21,14 +21,14 @@ public class OrdersService {
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
 
     public Boolean isCustomerRegistered(String userId) {
-        ProducerRecord<String, Student> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
+        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return Boolean.parseBoolean(response.value());
     }
 
     public String getCustomerAddress(String userId) {
-        ProducerRecord<String, Student> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
+        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return response.value();

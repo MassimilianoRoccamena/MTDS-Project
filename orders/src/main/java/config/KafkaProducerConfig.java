@@ -6,11 +6,13 @@ import java.util.HashMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -47,7 +49,7 @@ public class KafkaProducerConfig {
 
     @Bean
     public ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate() {
-        ConcurrentMessageListenerContainer<String, Result> replyContainer = kafkaListenerContainerFactory.createContainer("users:orders:isCustomerRegistered");
-        return new ReplyingKafkaTemplate<>(pf, replyContainer);
+        ConcurrentMessageListenerContainer<String, String> replyContainer = kafkaListenerContainerFactory.createContainer("users:orders:isCustomerRegistered");
+        return new ReplyingKafkaTemplate<>(producerFactory(), replyContainer);
     }
 }
