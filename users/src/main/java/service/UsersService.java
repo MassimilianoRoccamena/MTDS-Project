@@ -9,14 +9,17 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.SendTo;
 
-import dao.CustomerRepository;
-import entity.Customer;
+import dao.*;
+import entity.*;
 
 @Service
 public class UsersService {
 
     @Autowired
     CustomerRepository customerRepository;
+
+    @Autowired
+    DeliveryManRepository deliveryManRepository;
 
     @KafkaListener(topics = "orders:users:isCustomerRegistered")
     @SendTo("users:orders:isCustomerRegistered")
@@ -31,5 +34,12 @@ public class UsersService {
         Long parsedId = Long.parseLong(customerId);
         Optional<Customer> customer = customerRepository.findById(parsedId);
         return customer.get().getAddress();
+    }
+
+    @KafkaListener(topics = "shipping:users:getAvailableDeliveryMan")
+    @SendTo("users:shipping:getAvailableDeliveryMan")
+    public String getAvailableDeliveryMan(String nothing) {
+        Optional<DeliveryMan> deliveryMan = deliveryManRepository.findById(Long.ZERO);
+        return deliveryMan.get().getAddress();
     }
 }

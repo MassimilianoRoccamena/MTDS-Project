@@ -1,7 +1,5 @@
 package service;
 
-import java.util.concurrent.ExecutionException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +10,8 @@ import org.springframework.kafka.requestreply.RequestReplyFuture;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
+
+import entity.Order;
 
 @Service
 public class OrdersService {
@@ -30,9 +30,13 @@ public class OrdersService {
     }
 
     public String getCustomerAddress(String userId) throws InterruptedException, ExecutionException {
-        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
+        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:getCustomerAddress", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return response.value();
+    }
+
+    public void deliverOrder(Order order) {
+        kafkaTemplate.send(order.Id.toString());
     }
 }

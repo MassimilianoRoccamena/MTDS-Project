@@ -26,26 +26,10 @@ public class KafkaTopicConfig {
     
     @Bean
     public NewTopic topic11() {
-         return new NewTopic("orders:users:isCustomerRegistered", 1, (short) 1);
+         return new NewTopic("orders:shipping:deliverOrder", 1, (short) 1);
     }
     @Bean
     public NewTopic topic12() {
-         return new NewTopic("users:orders:isCustomerRegistered", 1, (short) 1);
-    }
-    @Bean
-    public NewTopic topic21() {
-         return new NewTopic("orders:users:getCustomerAddress", 1, (short) 1);
-    }
-    @Bean
-    public NewTopic topic22() {
-         return new NewTopic("users:orders:getCustomerAddress", 1, (short) 1);
-    }
-    @Bean
-    public NewTopic topic31() {
-         return new NewTopic("shipping:users:getAvailableDeliveryMan", 1, (short) 1);
-    }
-    @Bean
-    public NewTopic topic32() {
-         return new NewTopic("users:shipping:getAvailableDeliveryMan", 1, (short) 1);
+         return new NewTopic("shipping:orders:deliverOrder", 1, (short) 1);
     }
 }
