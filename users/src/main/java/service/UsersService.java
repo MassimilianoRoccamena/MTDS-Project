@@ -13,15 +13,15 @@ public class UsersService {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @KafkaListener(topicPartitions = @TopicPartition(topic = "isCustomerRegistered", partitions = { "0" }))
+    @KafkaListener(topics = "users:orders:isCustomerRegistered")
     public void isCustomerRegistered(String message) {
         String response = "1";
-        kafkaTemplate.send("isCustomerRegistered", 1, response, response);
+        kafkaTemplate.send("users:orders:isCustomerRegistered_return", "1");
     }
 
-    @KafkaListener(topicPartitions = @TopicPartition(topic = "getCustomerAddress", partitions = { "0" }))
+    @KafkaListener(topics = "users:orders:getCustomerAddress")
     public void getCustomerAddress(String message) {
         String response = "1";
-        kafkaTemplate.send("getCustomerAddress", 1, response, response);
+        kafkaTemplate.send("users:orders:getCustomerAddress_return", "1");
     }
 }
