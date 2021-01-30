@@ -28,8 +28,15 @@ public class UsersService {
         return customerRepository.existsById(parsedId);
     }
 
+    @KafkaListener(topics = "shipping:users:isValidDeliveryMan")
+    @SendTo("shipping:isValidDeliveryMan")
+    public Boolean isValidDeliveryMan(String customerId) {
+        Long parsedId = Long.parseLong(customerId);
+        return customerRepository.existsById(parsedId);
+    }
+
     @KafkaListener(topics = "orders:users:getCustomerAddress")
-    @SendTo("users:orders:getCustomerAddress")
+    @SendTo("users:orders:getCustosmerAddress")
     public String getCustomerAddress(String customerId) {
         Long parsedId = Long.parseLong(customerId);
         Optional<Customer> customer = customerRepository.findById(parsedId);

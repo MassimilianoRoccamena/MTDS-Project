@@ -48,4 +48,12 @@ public class KafkaTopicConfig {
     public NewTopic topic32() {
          return new NewTopic("users:shipping:getAvailableDeliveryMan", 1, (short) 1);
     }
+    @Bean
+    public NewTopic topic41() {
+         return new NewTopic("shipping:users:isValidDeliveryMan", 1, (short) 1);
+    }
+    @Bean
+    public NewTopic topic42() {
+         return new NewTopic("users:shipping:isValidDeliveryMan", 1, (short) 1);
+    }
 }
