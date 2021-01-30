@@ -23,5 +23,11 @@ public class Query1
                 .master(master)
                 .appName(name)
                 .getOrCreate();
+
+        final List<StructField> schemaFields = new ArrayList<>();
+        mySchemaFields.add(DataTypes.createStructField("day", DataTypes.LongType, true));
+        mySchemaFields.add(DataTypes.createStructField("country", DataTypes.StringType, true));
+        mySchemaFields.add(DataTypes.createStructField("cases", DataTypes.IntegerType, true));
+        final StructType schema = DataTypes.createStructType(schemaFields);
     }
 }
