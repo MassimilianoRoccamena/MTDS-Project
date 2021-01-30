@@ -17,8 +17,10 @@ class LoadDatabase {
   CommandLineRunner initDatabase() {
 
     return args -> {
-      userRepository.save(new User("roccamena", "address1"));
-      userRepository.save(new User("romano", "address2"));
+      userRepository.save(User.newCustomer("roccamena", "address1"));
+      userRepository.save(User.newCustomer("romano", "address2"));
+      userRepository.save(User.newDeliveryMan("john"));
+      userRepository.save(User.newDeliveryMan("jack"));
     };
   }
 }

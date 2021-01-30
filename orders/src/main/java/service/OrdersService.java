@@ -23,7 +23,7 @@ public class OrdersService {
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
 
     public Boolean isCustomerRegistered(String userId) throws InterruptedException, ExecutionException {
-        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isCustomerRegistered", userId, userId);
+        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:isValidCustomer", userId, userId);
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return Boolean.parseBoolean(response.value());
