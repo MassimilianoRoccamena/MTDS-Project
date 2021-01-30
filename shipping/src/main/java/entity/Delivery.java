@@ -24,4 +24,11 @@ public class Delivery {
     @NonNull
     @Column
     private Long deliveryManId;
+
+    @NonNull
+    @Column
+    private String address;
+
+    @Column
+    private Boolean delivered = Boolean.FALSE;
 }

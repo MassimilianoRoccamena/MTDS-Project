@@ -19,7 +19,7 @@ import entity.*;
 public class ShippingService {
 
     @Autowired
-    ShippingRepository shippingRepository;
+    DeliveryRepository DeliveryRepository;
 
     @Autowired
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
@@ -28,12 +28,27 @@ public class ShippingService {
     public void deliverOrder(String orderId) throws InterruptedException, ExecutionException {
         Long parsedId = Long.parseLong(customerId);
         Long deliveryManId = getAvailableDeliveryMan();
-        Delivery delivery = new Delivery(parsedId, deliveryManId);
-        shippingRepository.save(delivery);
+        String address = getCustomerAddress();
+        Delivery delivery = new Delivery(parsedId, deliveryManId, address);
+        deliveryRepository.save(delivery);
+    }
+
+    public Boolean isValidDeliveryMan(String deliveryManId) throws InterruptedException, ExecutionException {
+        ProducerRecord<String, String> record = new ProducerRecord<>("shipping:users:isValidDeliveryMan", deliveryManId, deliveryManId);
+        RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
+        ConsumerRecord<String, String> response = future.get();
+        return Boolean.parseBoolean(response.value());
+    }
+
+    public String getCustomerAddress(String userId) throws InterruptedException, ExecutionException {
+        ProducerRecord<String, String> record = new ProducerRecord<>("shipping:users:getCustomerAddress", userId, userId);
+        RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
+        ConsumerRecord<String, String> response = future.get();
+        return response.value();
     }
 
     public Long getAvailableDeliveryMan() throws InterruptedException, ExecutionException {
-        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:getAvailableDeliveryMan", "", "");
+        ProducerRecord<String, String> record = new ProducerRecord<>("shipping:users:getAvailableDeliveryMan", "", "");
         RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
         ConsumerRecord<String, String> response = future.get();
         return Long.parseLong(response.value());

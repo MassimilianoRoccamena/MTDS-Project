@@ -26,12 +26,10 @@ public class OrdersController {
 	public void createOrder(@RequestBody Order order) throws InterruptedException, ExecutionException {
         Long customerId = order.getCustomerId();
 
-        Boolean validCustomer = ordersService.isCustomerRegistered(customerId.toString());
-        if !(validCustomer) {
+        Boolean validation = ordersService.isCustomerRegistered(customerId.toString());
+        if !(validation) {
             throw new ExecutionException("Invalid customer")
         }
-
-        String  customerAddress = ordersService.getCustomerAddress(customerId.toString());
         
         for (OrderField field : order.getFields()) {
             if !(ProductRepository.existsById(field.getProduct())) {
@@ -39,7 +37,8 @@ public class OrdersController {
             }
         }
 
-        ordersService.deliverOrder(order);
+        // Transaction?
         orderRepository.save(order);
+        ordersService.deliverOrder(order);
 	}
 }

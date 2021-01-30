@@ -29,13 +29,6 @@ public class OrdersService {
         return Boolean.parseBoolean(response.value());
     }
 
-    public String getCustomerAddress(String userId) throws InterruptedException, ExecutionException {
-        ProducerRecord<String, String> record = new ProducerRecord<>("orders:users:getCustomerAddress", userId, userId);
-        RequestReplyFuture<String, String, String> future = replyingKafkaTemplate.sendAndReceive(record);
-        ConsumerRecord<String, String> response = future.get();
-        return response.value();
-    }
-
     public void deliverOrder(Order order) {
         kafkaTemplate.send(order.Id.toString());
     }
