@@ -1,4 +1,4 @@
-package entity;
+package users.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -8,7 +8,7 @@ import javax.persistence.Column;
 import lombok.Data;
 import lombok.NonNull;
 
-import dto.LoginForm;
+import users.dto.LoginForm;
 
 @Data
 @Entity

@@ -1,22 +1,25 @@
-package service;
+package users.service;
 
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.handler.annotation.SendTo;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.SendTo;
 
-import dao.*;
-import entity.*;
+import users.dao.*;
+import users.entity.*;
 
 @Service
 public class UsersService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "orders:users:isValidCustomer")
     @SendTo("users:orders:isValidCustomer")

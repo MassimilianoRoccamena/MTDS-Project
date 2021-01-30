@@ -1,4 +1,4 @@
-package dto;
+package users.dto;
 
 import lombok.Data;
 import lombok.NonNull;

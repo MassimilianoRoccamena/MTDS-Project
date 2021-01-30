@@ -1,12 +1,12 @@
-package config;
+package users.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import dao.*;
-import entity.*;
+import users.dao.*;
+import users.entity.*;
 
 @Configuration
 class LoadDatabase {

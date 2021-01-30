@@ -1,11 +1,11 @@
-package controller;
+package users.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import dto.*;
-import dao.*;
-import entity.*;
+import users.dto.*;
+import users.dao.*;
+import users.entity.*;
 
 @RestController
 @RequestMapping("/target")

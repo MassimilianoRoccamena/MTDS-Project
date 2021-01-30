@@ -1,4 +1,4 @@
-package config;
+package users.config;
 
 import java.util.Map;
 import java.util.HashMap;
