@@ -24,22 +24,22 @@ public class OrdersController {
     OrdersService ordersService;
     
     @PostMapping("/{customerId}/submit")
-	public void submitOrder(@PathVariable String customerId, @RequestBody List<OrderField> orderFields) throws InterruptedException, ExecutionException {
-        Long customerId = Long.parseLong(customerId);
+	public void submitOrder(@PathVariable String customerId, @RequestBody List<OrderField> orderFields) throws InterruptedException, ExecutionException, Exception {
+        Long parsedId = Long.parseLong(customerId);
 
-        Boolean validation = ordersService.isCustomerRegistered(customerId.toString());
-        if !(validation) {
-            throw new ExecutionException("Invalid customer")
+        Boolean validation = ordersService.isCustomerRegistered(parsedId.toString());
+        if (!validation) {
+            throw new Exception("Invalid customer");
         }
         
         for (OrderField field : orderFields) {
-            if !(ProductRepository.existsById(field.getProduct())) {
-                throw new ExecutionException("Invalid product")
+            if (!productRepository.existsById(field.getProductId())) {
+                throw new Exception("Invalid product");
             }
         }
 
         // Transaction?
-        Order order = new Order(customerId, orderFields);
+        Order order = new Order(parsedId, orderFields);
         orderRepository.save(order);
         ordersService.deliverOrder(order);
 	}

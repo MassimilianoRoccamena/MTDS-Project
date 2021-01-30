@@ -1,5 +1,7 @@
 package controller;
 
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,31 +9,26 @@ import org.springframework.web.bind.annotation.*;
 
 import dao.*;
 import entity.*;
+import service.*;
 
 @RestController
 @RequestMapping("/target")
-public class OrdersController {
+public class ShippingController {
 
     @Autowired
     DeliveryRepository deliveryRepository;
 
     @Autowired
-    ShippingService ordersService;
+    ShippingService shippingService;
 
     @GetMapping("/{deliveryManId}/notify")
-    public Boolean notifyDelivery(@PathVariable String deliveryManId)  throws InterruptedException, ExecutionException {
-        Boolean parsedId = Boolean.parseBoolean()deliveryManId;
+    public void notifyDelivery(@PathVariable String deliveryManId)  throws InterruptedException, ExecutionException, Exception {
+        Boolean parsedId = Boolean.parseBoolean(deliveryManId);
 
-        Boolean validation = ordersService.isValidDeliveryMan(parsedId);
-        if !(validation) {
-            throw new ExecutionException("Invalid delivery man")
+        Boolean validation = shippingService.isValidDeliveryMan(deliveryManId);
+        if (!validation) {
+            throw new Exception("Invalid delivery man");
         }
-
-        String address = ordersService.getCustomerAddress();
-
-        Delivery delivery = new Delivery(parsedId, address);
-        deliveryRepository.save(delivery);
-        return Boolean.TRUE;
     }
     
 }

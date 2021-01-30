@@ -1,5 +1,7 @@
 package service;
 
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,6 @@ public class OrdersService {
     }
 
     public void deliverOrder(Order order) {
-        kafkaTemplate.send(order.Id.toString());
+        kafkaTemplate.send("orders:shipping:deliverOrder", order.getId().toString());
     }
 }

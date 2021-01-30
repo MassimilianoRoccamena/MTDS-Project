@@ -19,16 +19,16 @@ import entity.*;
 public class ShippingService {
 
     @Autowired
-    DeliveryRepository DeliveryRepository;
+    DeliveryRepository deliveryRepository;
 
     @Autowired
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
 
     @KafkaListener(topics = "orders:shipping:deliverOrder")
     public void deliverOrder(String orderId) throws InterruptedException, ExecutionException {
-        Long parsedId = Long.parseLong(customerId);
+        Long parsedId = Long.parseLong(orderId);
         Long deliveryManId = getAvailableDeliveryMan();
-        String address = getCustomerAddress();
+        String address = getCustomerAddress(orderId);
         Delivery delivery = new Delivery(parsedId, deliveryManId, address);
         deliveryRepository.save(delivery);
     }

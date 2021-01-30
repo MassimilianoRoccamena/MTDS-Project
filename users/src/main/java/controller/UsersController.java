@@ -17,7 +17,7 @@ public class UsersController {
     @PostMapping("/register")
 	public Long registerUser(@RequestBody LoginForm loginForm) {
         User customer = User.newCustomer(loginForm);
-        customerRepository.save(customer);
+        userRepository.save(customer);
         return customer.getId();
 	}
 }

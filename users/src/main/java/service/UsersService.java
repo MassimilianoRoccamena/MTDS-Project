@@ -45,7 +45,7 @@ public class UsersService {
     @KafkaListener(topics = "shipping:users:getAvailableDeliveryMan")
     @SendTo("users:shipping:getAvailableDeliveryMan")
     public Long getAvailableDeliveryMan(String nothing) {
-        User deliveryMan = userRepository.findById(Long.ZERO).get();
+        User deliveryMan = userRepository.findById(Long.valueOf("0")).get();
         return deliveryMan.getId();
     }
 }
