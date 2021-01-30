@@ -32,6 +32,6 @@ public class OrdersService {
     }
 
     public void deliverOrder(Order order) {
-        kafkaTemplate.send("orders:shipping:deliverOrder", order.getId().toString());
+        kafkaTemplate.send("orders:shipping:deliverOrder", order.getId().toString() + " " + order.getCustomerId().toString());
     }
 }

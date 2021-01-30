@@ -25,11 +25,13 @@ public class ShippingService {
     private ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
 
     @KafkaListener(topics = "orders:shipping:deliverOrder")
-    public void deliverOrder(String orderId) throws InterruptedException, ExecutionException {
-        Long parsedId = Long.parseLong(orderId);
+    public void deliverOrder(String ids) throws InterruptedException, ExecutionException {
+        String[] splittedIds = ids.split(" ");
+
+        Long orderId = Long.parseLong(splittedIds[0]);
         Long deliveryManId = getAvailableDeliveryMan();
-        String address = getCustomerAddress(orderId);
-        Delivery delivery = new Delivery(parsedId, deliveryManId, address);
+        String address = getCustomerAddress(splittedIds[1]);
+        Delivery delivery = new Delivery(orderId, deliveryManId, address);
         deliveryRepository.save(delivery);
     }
 
