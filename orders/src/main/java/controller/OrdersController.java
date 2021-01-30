@@ -25,9 +25,7 @@ public class OrdersController {
     
     @PostMapping("/{customerId}/submit")
 	public void submitOrder(@PathVariable String customerId, @RequestBody List<OrderField> orderFields) throws InterruptedException, ExecutionException, Exception {
-        Long parsedId = Long.parseLong(customerId);
-
-        Boolean validation = ordersService.isCustomerRegistered(parsedId.toString());
+        Boolean validation = ordersService.isCustomerRegistered(customerId);
         if (!validation) {
             throw new Exception("Invalid customer");
         }
@@ -39,6 +37,7 @@ public class OrdersController {
         }
 
         // Transaction?
+        Long parsedId = Long.parseLong(customerId);
         Order order = new Order(parsedId, orderFields);
         orderRepository.save(order);
         ordersService.deliverOrder(order);
