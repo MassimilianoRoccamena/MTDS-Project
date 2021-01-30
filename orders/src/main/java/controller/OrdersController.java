@@ -1,5 +1,6 @@
 package controller;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,7 @@ import entity.*;
 import service.*;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/target")
 public class OrdersController {
 
     @Autowired
@@ -22,22 +23,23 @@ public class OrdersController {
     @Autowired
     OrdersService ordersService;
     
-    @PostMapping("/create")
-	public void createOrder(@RequestBody Order order) throws InterruptedException, ExecutionException {
-        Long customerId = order.getCustomerId();
+    @PostMapping("/{customerId}/submit")
+	public void submitOrder(@PathVariable String customerId, @RequestBody List<OrderField> orderFields) throws InterruptedException, ExecutionException {
+        Long customerId = Long.parseLong(customerId);
 
         Boolean validation = ordersService.isCustomerRegistered(customerId.toString());
         if !(validation) {
             throw new ExecutionException("Invalid customer")
         }
         
-        for (OrderField field : order.getFields()) {
+        for (OrderField field : orderFields) {
             if !(ProductRepository.existsById(field.getProduct())) {
                 throw new ExecutionException("Invalid product")
             }
         }
 
         // Transaction?
+        Order order = new Order(customerId, orderFields);
         orderRepository.save(order);
         ordersService.deliverOrder(order);
 	}

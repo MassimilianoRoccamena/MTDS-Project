@@ -4,20 +4,21 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import entity.*;
 import dao.*;
+import entity.*;
 
 @Configuration
 class LoadDatabase {
 
+  @Autowired
+  UserRepository userRepository;
+
   @Bean
-  CommandLineRunner initDatabase(CustomerRepository customerRepository, DeliveryManRepository deliveryManRepository) {
+  CommandLineRunner initDatabase() {
 
     return args -> {
-      customerRepository.save(new Customer("max", "address1"));
-      customerRepository.save(new Customer("lore", "address2"));
-      deliveryManRepository.save(new DeliveryMan("max"));
-      deliveryManRepository.save(new DeliveryMan("johnny"));
+      userRepository.save(new User("roccamena", "address1"));
+      userRepository.save(new User("romano", "address2"));
     };
   }
 }

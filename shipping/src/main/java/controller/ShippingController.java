@@ -9,7 +9,7 @@ import dao.*;
 import entity.*;
 
 @RestController
-@RequestMapping("/shipping")
+@RequestMapping("/target")
 public class OrdersController {
 
     @Autowired
@@ -18,8 +18,8 @@ public class OrdersController {
     @Autowired
     ShippingService ordersService;
 
-    @GetMapping("/{deliveryManId}/deliver")
-    public Boolean deliverOrder(@PathVariable String deliveryManId)  throws InterruptedException, ExecutionException {
+    @GetMapping("/{deliveryManId}/notify")
+    public Boolean notifyDelivery(@PathVariable String deliveryManId)  throws InterruptedException, ExecutionException {
         Boolean parsedId = Boolean.parseBoolean()deliveryManId;
 
         Boolean validation = ordersService.isValidDeliveryMan(parsedId);
@@ -30,7 +30,7 @@ public class OrdersController {
         String address = ordersService.getCustomerAddress();
 
         Delivery delivery = new Delivery(parsedId, address);
-
+        deliveryRepository.save(delivery);
         return Boolean.TRUE;
     }
     

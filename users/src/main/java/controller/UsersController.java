@@ -8,15 +8,15 @@ import dao.*;
 import entity.*;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/target")
 public class UsersController {
 
     @Autowired
-    CustomerRepository customerRepository;
+    UserRepository userRepository;
     
     @PostMapping("/register")
 	public Long registerUser(@RequestBody LoginForm loginForm) {
-        Customer customer = Customer.fromDTO(loginForm);
+        User customer = User.newCustomer(loginForm);
         customerRepository.save(customer);
         return customer.getId();
 	}

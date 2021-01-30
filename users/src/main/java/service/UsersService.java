@@ -16,23 +16,20 @@ import entity.*;
 public class UsersService {
 
     @Autowired
-    CustomerRepository customerRepository;
-
-    @Autowired
-    DeliveryManRepository deliveryManRepository;
+    UserRepository userRepository;
 
     @KafkaListener(topics = "orders:users:isCustomerRegistered")
     @SendTo("users:orders:isCustomerRegistered")
     public Boolean isCustomerRegistered(String customerId) {
         Long parsedId = Long.parseLong(customerId);
-        return customerRepository.existsById(parsedId);
+        return userRepository.existsById(parsedId);
     }
 
     @KafkaListener(topics = "shipping:users:isValidDeliveryMan")
     @SendTo("shipping:isValidDeliveryMan")
     public Boolean isValidDeliveryMan(String customerId) {
         Long parsedId = Long.parseLong(customerId);
-        return customerRepository.existsById(parsedId);
+        return userRepository.existsById(parsedId);
     }
 
     @KafkaListener(topics = "orders:users:getCustomerAddress")
@@ -40,13 +37,13 @@ public class UsersService {
     public String getCustomerAddress(String customerId) {
         Long parsedId = Long.parseLong(customerId);
         Optional<Customer> customer = customerRepository.findById(parsedId);
-        return customer.get().getAddress();
+        return userRepository.get().getAddress();
     }
 
     @KafkaListener(topics = "shipping:users:getAvailableDeliveryMan")
     @SendTo("users:shipping:getAvailableDeliveryMan")
     public String getAvailableDeliveryMan(String nothing) {
         Optional<DeliveryMan> deliveryMan = deliveryManRepository.findById(Long.ZERO);
-        return deliveryMan.get().getAddress();
+        return userRepository.get().getAddress();
     }
 }
