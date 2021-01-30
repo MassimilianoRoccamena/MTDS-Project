@@ -32,9 +32,12 @@ public class Query1
         int window = 7;
 
         Dataset<Row> input = spark.read().json("data/data.csv");
-        WindowSpec windowSpec = Window.orderBy(input.col("cases")).rangeBetween(-7, 0);
-        Dataset<Row> output = input.withColumn("MA(7)", functions.avg("cases").over(windowSpec));
+        Dataset<Row> byCountry = input.repartition(input.col("country"));
+        WindowSpec slidingWindow = Window.orderBy("day").rangeBetween(-window, 0);
+        Dataset<Row> output = byCountry.withColumn("MA(7)", functions.avg("cases").over(slidingWindow));
         
         output.show();
+        
+        spark.close();
     }
 }
