@@ -4,12 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.NonNull;
 import lombok.Getter;
 
-import app.data.User;
-
 @RequiredArgsConstructor
-public class Customer extends User
+@Getter
+public class Product
 {
     @NonNull
-    @Getter
-    private String address;
+    private String name;
 }

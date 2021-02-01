@@ -1,10 +1,10 @@
 package app.data;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 import app.data.User;
 
-@Data
+@RequiredArgsConstructor
 public class DeliveryMan extends User
 {
 
