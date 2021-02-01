@@ -12,7 +12,7 @@ import org.apache.kafka.clients.producer.*;
 import app.data.Product;
 import app.data.Order;
 
-public class OrderService extends ListeningService
+public class OrderService extends ListeningService implements OrderController
 {
     public class NewCustomerNameListener extends KafkaListener<OrderService> 
     {
@@ -39,6 +39,7 @@ public class OrderService extends ListeningService
         productData = new ArrayList<>();
         orderData = new HashMap<>();
         producer = new KafkaProducer<>(KafkaConfig.producerProperties());
+        addListener(new NewCustomerNameListener(this));
     }
 
     public void addProduct(Product product)

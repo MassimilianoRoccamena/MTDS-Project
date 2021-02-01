@@ -10,7 +10,7 @@ import app.data.User;
 import app.data.Customer;
 import app.data.DeliveryMan;
 
-public class UserService extends BasicService
+public class UserService extends BasicService implements UserController
 {
     private Map<String, User> userData;
 

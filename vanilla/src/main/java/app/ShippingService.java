@@ -9,7 +9,7 @@ import org.apache.kafka.clients.consumer.*;
 
 import app.data.Delivery;
 
-public class ShippingService extends ListeningService
+public class ShippingService extends ListeningService implements ShippingController
 {
     public class NewDeliveryManNameListener extends KafkaListener<ShippingService> 
     {
@@ -59,6 +59,9 @@ public class ShippingService extends ListeningService
         deliveryManNameData = new ArrayList<>();
         customerAddressData = new HashMap<>();
         deliveryData = new HashMap<>();
+        addListener(new NewDeliveryManNameListener(this));
+        addListener(new NewCustomerAddressListener(this));
+        addListener(new NewOrderListener(this));
     }
 
     public void notifyDelivery(String deliveryManName, Integer orderId)
