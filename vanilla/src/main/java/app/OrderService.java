@@ -30,6 +30,7 @@ public class OrderService extends ListeningService implements OrderController
             {
                 String customerName = record.value();
                 parentService.getCustomerNameData().add(customerName);
+                printLog("Received customer " + customerName);
             }
         }
     }

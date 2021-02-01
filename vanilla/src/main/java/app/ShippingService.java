@@ -28,6 +28,7 @@ public class ShippingService extends ListeningService implements ShippingControl
                 String deliveryManName = record.value();
                 parentService.getDeliveryManNameData().add(deliveryManName);
                 parentService.deliveryData.put(deliveryManName, new ArrayList<>());
+                printLog("Received delivery man " + deliveryManName);
             }
         }
     }
@@ -49,6 +50,7 @@ public class ShippingService extends ListeningService implements ShippingControl
                 String customerName = splittedMessage[0];
                 String customerAddress = splittedMessage[1];
                 parentService.getCustomerAddressData().put(customerName, customerAddress);
+                printLog("Received address " + customerAddress + " of customer " + customerName);
             }
         }
     }
@@ -69,11 +71,12 @@ public class ShippingService extends ListeningService implements ShippingControl
                 String[] splittedMessage = message.split(" ");
                 String customerName = splittedMessage[0];
                 Integer orderId = Integer.parseInt(splittedMessage[1]);
-                String address = parentService.customerAddressData.get(customerName);
+                String customerAddress = parentService.customerAddressData.get(customerName);
                 String deliveryManName = parentService.deliveryManNameData.get(0);
-                Delivery delivery = new Delivery(orderId, deliveryManName, address);
+                Delivery delivery = new Delivery(orderId, deliveryManName, customerAddress);
                 List <Delivery> userDeliveries = parentService.deliveryData.get(deliveryManName);
                 userDeliveries.add(delivery);
+                printLog("Received order " + orderId + " to address " + customerAddress + ", delivered by " + deliveryManName);
             }
         }
     }
