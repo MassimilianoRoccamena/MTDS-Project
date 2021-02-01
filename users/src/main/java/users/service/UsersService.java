@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.messaging.handler.annotation.SendTo;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
 import users.dao.*;
 import users.entity.*;
@@ -19,7 +19,7 @@ public class UsersService {
     UserRepository userRepository;
 
     @Autowired
-    ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "orders:users:isValidCustomer")
     @SendTo("users:orders:isValidCustomer")

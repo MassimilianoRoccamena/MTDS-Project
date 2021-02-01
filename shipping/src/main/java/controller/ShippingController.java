@@ -28,7 +28,7 @@ public class ShippingController {
 
         Long parsedId = Long.parseLong(deliveryManId);
         Delivery delivery = deliveryRepository.findById(parsedId).get();
-        delivery.setDelivered(Boolean.FALSE);
+        deliver.setDelivered(Boolean.FALSE);
         deliveryRepository.save(delivery);
     }
     
