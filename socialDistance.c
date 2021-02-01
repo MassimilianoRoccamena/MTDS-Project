@@ -16,8 +16,8 @@ struct region
         int yCoordinateStart;
         int xCoordinateEnd;
         int yCoordinateEnd;
+        int infected;
         struct region *next;
-
     };
 typedef struct message
 {
@@ -26,7 +26,27 @@ typedef struct message
     char processState;
 } message;
 
-
+MPI_Datatype createMessageType(){
+    message msg;
+    MPI_Datatype mpi_message;
+    int struct_len = 3;
+    int block_lens[struct_len];
+    MPI_Datatype types[struct_len];
+    MPI_Aint displacements[struct_len];
+    MPI_Aint current_displacement = 0;
+    block_lens[0] = 1;
+    types[0] = MPI_FLOAT;
+    displacements[0] = (size_t) &(msg.xCoordinate) - (size_t) &msg;
+    block_lens[1] = 1;
+    types[1] = MPI_FLOAT;
+    displacements[1] = (size_t) &(msg.yCoordinate) - (size_t) &msg;
+    block_lens[2] = 1;
+    types[2] = MPI_CHAR;
+    displacements[2] = (size_t) &(msg.processState) - (size_t) &msg;
+    MPI_Type_create_struct(struct_len, block_lens, displacements, types, &mpi_message);
+    MPI_Type_commit(&mpi_message);
+    return mpi_message;
+}
 struct region* createRegions(int areaWidth, int areaLength, int regionWidth, int regionLength){
 
     struct region *firstRegion = NULL;
@@ -42,6 +62,7 @@ struct region* createRegions(int areaWidth, int areaLength, int regionWidth, int
             newRegion->xCoordinateEnd = (j+1) * regionLength;
             newRegion->yCoordinateStart = i * regionWidth;
             newRegion->yCoordinateEnd = (i+1) * regionWidth;
+            newRegion->infected = 0;
             newRegion->next = firstRegion;
             firstRegion = newRegion;
         } 
@@ -120,8 +141,8 @@ int main(int argc, char** argv){
     float simulationSeconds = atof(argv[9]);
 
     int rank, size;
-    float initialxCoordinate = (areaWidth / 2);  
-    float initialyCoordinate = (areaLength / 2);
+    float initialxCoordinate = 0;  
+    float initialyCoordinate = 0;
     float actualxCoordinate = initialxCoordinate;
     float actualyCoordinate = initialyCoordinate;
     float directionAngle;
@@ -130,28 +151,8 @@ int main(int argc, char** argv){
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-
-    //Create the message type
-    message msg;
-    MPI_Datatype mpi_message;
-    int struct_len = 3;
-    int block_lens[struct_len];
-    MPI_Datatype types[struct_len];
-    MPI_Aint displacements[struct_len];
-    MPI_Aint current_displacement = 0;
-    block_lens[0] = 1;
-    types[0] = MPI_FLOAT;
-    displacements[0] = (size_t) &(msg.xCoordinate) - (size_t) &msg;
-    block_lens[1] = 1;
-    types[1] = MPI_FLOAT;
-    displacements[1] = (size_t) &(msg.yCoordinate) - (size_t) &msg;
-    block_lens[2] = 1;
-    types[2] = MPI_CHAR;
-    displacements[2] = (size_t) &(msg.processState) - (size_t) &msg;
-    MPI_Type_create_struct(struct_len, block_lens, displacements, types, &mpi_message);
-    MPI_Type_commit(&mpi_message);
-
+    MPI_Datatype mpi_message = createMessageType();
+    
     directionAngle = 2 * PI * rank / size;
 
     if(rank >= 0.0 && rank < infected){
@@ -162,7 +163,8 @@ int main(int argc, char** argv){
     } 
     //printf("Process %d has started working!\nActual position: %f, %f\nDirection: %f\nState: %c\n", rank, actualxCoordinate, actualyCoordinate, directionAngle, state[0]);
 
-    int count = 0;
+    int iterations = 0;
+    int movement = 0;
     int day = 0;
     double xVelocity = velocity * cos(directionAngle);
     double yVelocity = velocity * sin(directionAngle);
@@ -176,24 +178,28 @@ int main(int argc, char** argv){
     while (1)
     {   
         mainTimer(simulationSeconds);
-        count++;
+        iterations++;
+        movement++;
         if(contactWithInfect != 0 && contactWithInfect % simulatedTenMinutes == 0){
             strcpy(state, "infected");
         }
-        if(count % simulatedDay == 0){
+        if(iterations % simulatedDay == 0){
             day++;
             printf("[PROCESS %d] DAY %d Position: %f, %f State: %s\n", rank, day, actualxCoordinate, actualyCoordinate, state);
         }
         if (checkOutOfBound(actualxCoordinate, actualyCoordinate, areaLength / 2, areaWidth / 2))
         {
             directionAngle = changeDirection(actualxCoordinate, actualyCoordinate, areaLength/2, areaWidth/2, directionAngle);
+            //printf("[PROCESS %d] Changing direction. New direction: %f\n", rank, directionAngle);
             initialxCoordinate = actualxCoordinate;
             initialyCoordinate = actualyCoordinate;
+            movement = 1;
             xVelocity = velocity * cos(directionAngle);
             yVelocity = velocity * sin(directionAngle); 
         }
-        actualxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * count;
-        actualyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * count;
+        actualxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
+        actualyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
+        //printf("[PROCESS %d] x: %f y: %f\n", rank, actualxCoordinate, actualyCoordinate);
         message *sendMessage =  malloc(sizeof(message));
         message *receiveMessage =  malloc(sizeof(message));
         sendMessage->xCoordinate = actualxCoordinate;
@@ -207,7 +213,7 @@ int main(int argc, char** argv){
                 //printf("[PROCESS %d] Sending message: %f, %f, %c\n", rank, sendMessage->xCoordinate, sendMessage->yCoordinate, sendMessage->processState);
                 MPI_Isend(sendMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &request);
                 MPI_Recv(receiveMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &status);
-                printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
+                //printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
                 if(receiveMessage->processState == 'i' && calculateDistance(actualxCoordinate, actualyCoordinate, receiveMessage->xCoordinate, receiveMessage->yCoordinate) <= spreadingDistance){
                     possibleInfected = true;
                     contactWithInfect++;
