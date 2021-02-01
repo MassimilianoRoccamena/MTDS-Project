@@ -9,15 +9,16 @@ import org.apache.kafka.clients.consumer.*;
 
 import app.data.Delivery;
 
+import app.kafka.KafkaConfig;
 import app.kafka.KafkaListener;
 
 public class ShippingService extends ListeningService
 {
     public class NewDeliveryManNameListener extends KafkaListener 
     {
-        public NewDeliveryManNameListener(KafkaConsumer<String, String> consumer)
+        public NewDeliveryManNameListener()
         {
-            super(consumer, "NewDeliveryManName");
+            super(KafkaConfig.consumerProperties("Shipping"), "NewDeliveryManName");
         }
 
         @Override
@@ -30,7 +31,19 @@ public class ShippingService extends ListeningService
     public class NewCustomerAddressListener extends KafkaListener 
     {
         public NewCustomerAddressListener(KafkaConsumer<String, String> consumer) {
-            super(consumer, "NewCustomerAddress");
+            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewCustomerAddress");
+        }
+
+        @Override
+        public void consume(ConsumerRecords<String, String> records) {
+            // TO DO
+        }
+    }
+
+    public class NewOrderListener extends KafkaListener 
+    {
+        public NewOrderListener(KafkaConsumer<String, String> consumer) {
+            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewOrder");
         }
 
         @Override

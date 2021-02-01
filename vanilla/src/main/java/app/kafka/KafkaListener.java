@@ -1,5 +1,6 @@
 package app.kafka;
 
+import java.util.Properties;
 import java.util.Collections;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -11,8 +12,8 @@ public abstract class KafkaListener implements Runnable
     
     private KafkaConsumer<String, String> consumer;
     
-    public KafkaListener(KafkaConsumer<String, String> consumer, String topic) {
-        this.consumer = consumer;
+    public KafkaListener(Properties properties, String topic) {
+        this.consumer = new KafkaConsumer<>(properties);
         this.consumer.subscribe(Collections.singletonList(topic));
     }
 

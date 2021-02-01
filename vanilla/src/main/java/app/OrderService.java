@@ -19,8 +19,8 @@ public class OrderService extends ListeningService
 {
     public class NewCustomerNameListener extends KafkaListener 
     {
-        public NewCustomerNameListener(KafkaConsumer<String, String> consumer) {
-            super(consumer, "NewCustomerName");
+        public NewCustomerNameListener() {
+            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewCustomerName");
         }
 
         @Override
@@ -41,6 +41,16 @@ public class OrderService extends ListeningService
         productData = new ArrayList<>();
         orderData = new HashMap<>();
         producer = new KafkaProducer<>(KafkaConfig.producerProperties());
+    }
+
+    public void addProduct(Product product)
+    {
+        if (productData.contains(product))
+        {
+            // Product already added
+        }
+
+        productData.add(product);
     }
 
     public void submitOrder(String customerName, List<Order.Field> orderFields) throws InterruptedException, ExecutionException
