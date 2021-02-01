@@ -5,14 +5,11 @@ import java.util.Collections;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-import lombok.Getter;
-
 import org.apache.kafka.clients.consumer.*;
 
 public abstract class KafkaListener<S extends BasicService> implements ServiceListener
 {
-    @Getter
-    private S parentService;
+    protected S parentService;
     private KafkaConsumer<String, String> consumer;
     
     public KafkaListener(S parentService, Properties properties, String topic) {

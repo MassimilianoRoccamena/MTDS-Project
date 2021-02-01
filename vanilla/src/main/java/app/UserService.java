@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
+import lombok.Getter;
+
 import org.apache.kafka.clients.producer.*;
 
 import app.data.User;
@@ -12,6 +14,7 @@ import app.data.DeliveryMan;
 
 public class UserService extends BasicService implements UserController
 {
+    @Getter
     private Map<String, User> userData;
 
     private KafkaProducer<String, String> producer;

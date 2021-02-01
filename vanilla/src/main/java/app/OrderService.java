@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+import lombok.Getter;
+
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.*;
 
@@ -16,18 +18,27 @@ public class OrderService extends ListeningService implements OrderController
 {
     public class NewCustomerNameListener extends KafkaListener<OrderService> 
     {
-        public NewCustomerNameListener(OrderService parentService) {
+        public NewCustomerNameListener(OrderService parentService)
+        {
             super(parentService, KafkaConfig.transactionalConsumerProperties(parentService.getServiceName()), "NewCustomerName");
         }
 
         @Override
-        public void consume(ConsumerRecords<String, String> records) {
-            // TO DO
+        public void consume(ConsumerRecords<String, String> records)
+        {
+            for (ConsumerRecord<String, String> record : records)
+            {
+                String customerName = record.value();
+                parentService.getCustomerNameData().add(customerName);
+            }
         }
     }
 
+    @Getter
     private List<String> customerNameData;
+    @Getter
     private List<Product> productData;
+    @Getter
     private Map<String, Order> orderData;
 
     private KafkaProducer<String, String> producer;
