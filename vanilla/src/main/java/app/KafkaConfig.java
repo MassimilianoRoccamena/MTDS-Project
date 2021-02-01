@@ -1,4 +1,4 @@
-package app.kafka;
+package app;
 
 import java.util.Properties;
 

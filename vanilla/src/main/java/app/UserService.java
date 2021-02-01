@@ -10,11 +10,10 @@ import app.data.User;
 import app.data.Customer;
 import app.data.DeliveryMan;
 
-import app.kafka.KafkaConfig;
-
 public class UserService extends BasicService
 {
     private Map<String, User> userData;
+
     private KafkaProducer<String, String> producer;
     private KafkaProducer<String, String> transactionalProducer;
 
@@ -23,7 +22,7 @@ public class UserService extends BasicService
         super();
         userData = new HashMap<>();
         producer = new KafkaProducer<>(KafkaConfig.producerProperties());
-        transactionalProducer = new KafkaProducer<>(KafkaConfig.transactionalProducerProperties("User"));
+        transactionalProducer = new KafkaProducer<>(KafkaConfig.transactionalProducerProperties(getServiceName()));
         transactionalProducer.initTransactions();
     }
 
@@ -50,7 +49,7 @@ public class UserService extends BasicService
         userData.put(customerName, user);
         transactionalProducer.commitTransaction();
     }
-    
+
     public void registerDeliveryMan(String deliveryManName) throws InterruptedException, ExecutionException
     {
         User user = userData.get(deliveryManName);
@@ -68,6 +67,11 @@ public class UserService extends BasicService
         record = new ProducerRecord<>("NewDeliveryManName", deliveryManName, deliveryManName);
         producer.send(record).get();
         userData.put(deliveryManName, user);
+    }
+
+    public String getServiceName()
+    {
+        return "User";
     }
 
     public void doService()

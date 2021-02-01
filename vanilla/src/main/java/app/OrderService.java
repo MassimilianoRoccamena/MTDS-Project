@@ -12,15 +12,12 @@ import org.apache.kafka.clients.producer.*;
 import app.data.Product;
 import app.data.Order;
 
-import app.kafka.KafkaConfig;
-import app.kafka.KafkaListener;
-
 public class OrderService extends ListeningService
 {
-    public class NewCustomerNameListener extends KafkaListener 
+    public class NewCustomerNameListener extends KafkaListener<OrderService> 
     {
-        public NewCustomerNameListener() {
-            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewCustomerName");
+        public NewCustomerNameListener(OrderService parentService) {
+            super(parentService, KafkaConfig.transactionalConsumerProperties(parentService.getServiceName()), "NewCustomerName");
         }
 
         @Override
@@ -32,6 +29,7 @@ public class OrderService extends ListeningService
     private List<String> customerNameData;
     private List<Product> productData;
     private Map<String, Order> orderData;
+
     private KafkaProducer<String, String> producer;
 
     public OrderService()
@@ -74,6 +72,11 @@ public class OrderService extends ListeningService
         ProducerRecord<String, String> record = new ProducerRecord<>("NewOrder", message, message);
         producer.send(record).get();
         orderData.put(customerName, order);
+    }
+
+    public String getServiceName()
+    {
+        return "Order";
     }
 
     public void doService()

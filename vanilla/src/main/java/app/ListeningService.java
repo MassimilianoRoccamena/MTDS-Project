@@ -3,18 +3,16 @@ package app;
 import java.util.List;
 import java.util.ArrayList;
 
-import app.kafka.KafkaListener;
-
-public abstract class ListeningService extends BasicService {
-
-    private List<KafkaListener> kafkaListeners;
+public abstract class ListeningService extends BasicService
+{
+    private List<ServiceListener> kafkaListeners;
 
     public ListeningService()
     {
         kafkaListeners = new ArrayList<>();
     }
 
-    public void addListener(KafkaListener listener)
+    public void addListener(ServiceListener listener)
     {
         kafkaListeners.add(listener);
     }

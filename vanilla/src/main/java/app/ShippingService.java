@@ -9,16 +9,13 @@ import org.apache.kafka.clients.consumer.*;
 
 import app.data.Delivery;
 
-import app.kafka.KafkaConfig;
-import app.kafka.KafkaListener;
-
 public class ShippingService extends ListeningService
 {
-    public class NewDeliveryManNameListener extends KafkaListener 
+    public class NewDeliveryManNameListener extends KafkaListener<ShippingService> 
     {
-        public NewDeliveryManNameListener()
+        public NewDeliveryManNameListener(ShippingService parentService)
         {
-            super(KafkaConfig.consumerProperties("Shipping"), "NewDeliveryManName");
+            super(parentService, KafkaConfig.consumerProperties(parentService.getServiceName()), "NewDeliveryManName");
         }
 
         @Override
@@ -28,10 +25,10 @@ public class ShippingService extends ListeningService
         }
     }
 
-    public class NewCustomerAddressListener extends KafkaListener 
+    public class NewCustomerAddressListener extends KafkaListener<ShippingService> 
     {
-        public NewCustomerAddressListener(KafkaConsumer<String, String> consumer) {
-            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewCustomerAddress");
+        public NewCustomerAddressListener(ShippingService parentService) {
+            super(parentService, KafkaConfig.transactionalConsumerProperties(parentService.getServiceName()), "NewCustomerAddress");
         }
 
         @Override
@@ -40,10 +37,10 @@ public class ShippingService extends ListeningService
         }
     }
 
-    public class NewOrderListener extends KafkaListener 
+    public class NewOrderListener extends KafkaListener<ShippingService> 
     {
-        public NewOrderListener(KafkaConsumer<String, String> consumer) {
-            super(KafkaConfig.transactionalConsumerProperties("Shipping"), "NewOrder");
+        public NewOrderListener(ShippingService parentService) {
+            super(parentService, KafkaConfig.transactionalConsumerProperties(parentService.getServiceName()), "NewOrder");
         }
 
         @Override
@@ -90,6 +87,11 @@ public class ShippingService extends ListeningService
         }
 
         requestedDelivery.setDelivered(Boolean.TRUE);
+    }
+
+    public String getServiceName()
+    {
+        return "Shipping";
     }
 
     public void doService()
