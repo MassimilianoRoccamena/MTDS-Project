@@ -17,5 +17,5 @@ public class Delivery
     private String address;
 
     @Setter
-    private Boolean completed = Boolean.FALSE;
+    private Boolean delivered = Boolean.FALSE;
 }

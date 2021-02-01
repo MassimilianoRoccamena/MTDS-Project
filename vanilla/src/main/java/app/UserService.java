@@ -2,6 +2,7 @@ package app;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.producer.*;
 
@@ -21,33 +22,52 @@ public class UserService extends BasicService
     public UserService()
     {
         super();
-        userData = new HashMap<String, User>();
+        userData = new HashMap<>();
         producer = new KafkaProducer<>(KafkaConfig.producerProperties());
         transactionalProducer = new KafkaProducer<>(KafkaConfig.transactionalProducerProperties("User"));
         transactionalProducer.initTransactions();
     }
 
-    public void registerCustomer(String name, String address)
+    public void registerCustomer(String customerName, String customerAddress) throws InterruptedException, ExecutionException
     {
-        User user = new Customer(name, address);
-        ProducerRecord<String, String> record;
+        User user = userData.get(customerName);
+
+        if (user != null)
+        {
+            if (user instanceof Customer)
+            {
+                // Name already used
+            }
+        }
 
         transactionalProducer.beginTransaction();
-        record = new ProducerRecord<>("CustomerName", name, name);
-        transactionalProducer.send(record).get();
-        record = new ProducerRecord<>("CustomerAddress", address, address);
-        transactionalProducer.send(record).get();
-        transactionalProducer.commitTransaction();
-
-        userData.put(name, user);
-    }
-    public void registerDeliveryMan(String name)
-    {
-        User user = new DeliveryMan(name);
+        user = new Customer(customerName, customerAddress);
         ProducerRecord<String, String> record;
-        record = new ProducerRecord<>("DeliveryManName", name, name);
+        record = new ProducerRecord<>("NewCustomerName", customerName, customerName);
+        transactionalProducer.send(record).get();
+        String message = customerName + " " + customerAddress;
+        record = new ProducerRecord<>("NewCustomerAddress", message, message);
+        transactionalProducer.send(record).get();
+        userData.put(customerName, user);
+        transactionalProducer.commitTransaction();
+    }
+    public void registerDeliveryMan(String deliveryManName) throws InterruptedException, ExecutionException
+    {
+        User user = userData.get(deliveryManName);
+
+        if (user != null)
+        {
+            if (user instanceof Customer)
+            {
+                // Name already used
+            }
+        }
+
+        user = new DeliveryMan(deliveryManName);
+        ProducerRecord<String, String> record;
+        record = new ProducerRecord<>("NewDeliveryManName", deliveryManName, deliveryManName);
         producer.send(record).get();
-        userData.put(name, user);
+        userData.put(deliveryManName, user);
     }
 
     public void doService()
@@ -55,6 +75,7 @@ public class UserService extends BasicService
         //CLI
 
         producer.close();
+        transactionalProducer.close();
     }
 
     public static void main( String[] args ) 

@@ -1,15 +1,19 @@
 package app.data;
 
-import lombok.RequiredArgsConstructor;
 import lombok.NonNull;
 import lombok.Getter;
 
 import app.data.User;
 
-@RequiredArgsConstructor
+@Getter
 public class Customer extends User
 {
     @NonNull
-    @Getter
     private String address;
+
+    public Customer(String name, String address)
+    {
+        this.name = name;
+        this.address = address;
+    }
 }

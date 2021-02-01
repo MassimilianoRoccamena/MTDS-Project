@@ -15,8 +15,6 @@ public abstract class ListeningService extends BasicService {
         kafkaListeners = new ArrayList<>();
     }
 
-    public abstract String getServiceAddress();
-
     public void addListener(KafkaListener listener)
     {
         kafkaListeners.add(listener);
@@ -26,7 +24,7 @@ public abstract class ListeningService extends BasicService {
     {
         for (Runnable listener : kafkaListeners)
         {
-            listener.run();
+            new Thread(listener).start();
         }
     }
 }

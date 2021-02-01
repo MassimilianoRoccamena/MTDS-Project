@@ -1,11 +1,11 @@
 package app.data;
 
-import lombok.RequiredArgsConstructor;
-
 import app.data.User;
 
-@RequiredArgsConstructor
 public class DeliveryMan extends User
 {
-
+    public DeliveryMan(String name)
+    {
+        this.name = name;
+    }
 }
