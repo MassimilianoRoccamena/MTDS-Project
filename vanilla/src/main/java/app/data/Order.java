@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.NonNull;
 import lombok.Getter;
 
-import app.data.Product;
-
 @Getter
 public class Order
 {   

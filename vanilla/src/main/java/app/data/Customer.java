@@ -3,8 +3,6 @@ package app.data;
 import lombok.NonNull;
 import lombok.Getter;
 
-import app.data.User;
-
 @Getter
 public class Customer extends User
 {

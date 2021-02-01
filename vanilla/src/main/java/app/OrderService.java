@@ -12,7 +12,6 @@ import org.apache.kafka.clients.producer.*;
 import app.data.Product;
 import app.data.Order;
 
-import app.ListeningService;
 import app.kafka.KafkaConfig;
 import app.kafka.KafkaListener;
 

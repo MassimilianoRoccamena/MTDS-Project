@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import app.kafka.KafkaListener;
-import app.BasicService;
 
 public abstract class ListeningService extends BasicService {
 

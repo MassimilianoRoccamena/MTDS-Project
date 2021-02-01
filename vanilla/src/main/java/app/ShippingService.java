@@ -6,12 +6,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.clients.producer.*;
 
 import app.data.Delivery;
 
-import app.ListeningService;
-import app.kafka.KafkaConfig;
 import app.kafka.KafkaListener;
 
 public class ShippingService extends ListeningService

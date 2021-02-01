@@ -10,7 +10,6 @@ import app.data.User;
 import app.data.Customer;
 import app.data.DeliveryMan;
 
-import app.BasicService;
 import app.kafka.KafkaConfig;
 
 public class UserService extends BasicService
