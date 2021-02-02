@@ -7,16 +7,19 @@
 #include <stdbool.h>
 
 #define PI 3.1415
-#define simulationTimeProportion 0.00001
+#define simulationTimeProportion 0.001
 #define secondsInTenMinutes 600
 
 struct region
     {
-        int xCoordinateStart;
-        int yCoordinateStart;
-        int xCoordinateEnd;
-        int yCoordinateEnd;
+        float xCoordinateStart;
+        float yCoordinateStart;
+        float xCoordinateEnd;
+        float yCoordinateEnd;
         int infected;
+        int immune;
+        int susceptible;
+        int regionNumber;
         struct region *next;
     };
 typedef struct message
@@ -47,24 +50,32 @@ MPI_Datatype createMessageType(){
     MPI_Type_commit(&mpi_message);
     return mpi_message;
 }
-struct region* createRegions(int areaWidth, int areaLength, int regionWidth, int regionLength){
+struct region* createRegions(float areaWidth, float areaLength, float regionWidth, float regionLength){
 
     struct region *firstRegion = NULL;
     float xRegion = areaLength / regionLength;
     float yRegion = areaWidth / regionWidth;
+    float startX = -areaLength/2;
+    float startY = -areaWidth/2;
+    int count = 0;
     for (int i = 0; i < yRegion; i++)
     {
         for (int j = 0; j < xRegion; j++)
-        {
+        {   
+            count++;
             struct region *newRegion;
             newRegion = malloc(sizeof(struct region));
-            newRegion->xCoordinateStart = j * regionLength;
-            newRegion->xCoordinateEnd = (j+1) * regionLength;
-            newRegion->yCoordinateStart = i * regionWidth;
-            newRegion->yCoordinateEnd = (i+1) * regionWidth;
+            newRegion->xCoordinateStart = startX + j * regionLength;
+            newRegion->xCoordinateEnd = startX + (j+1) * regionLength;
+            newRegion->yCoordinateStart = startY + i * regionWidth;
+            newRegion->yCoordinateEnd = startY + (i+1) * regionWidth;
             newRegion->infected = 0;
+            newRegion->susceptible = 0;
+            newRegion->immune = 0;
+            newRegion->regionNumber = count;
             newRegion->next = firstRegion;
             firstRegion = newRegion;
+            //printf("REGION %d: from: %f, %f to: %f, %f\n", newRegion->regionNumber, newRegion->xCoordinateStart, newRegion->yCoordinateStart, newRegion->xCoordinateEnd, newRegion->yCoordinateEnd);
         } 
     }
     return firstRegion;
@@ -126,6 +137,59 @@ float changeDirection(float x, float y, float xMax, float yMax, float actualAngl
     
     return(startAngle + (finishAngle - startAngle) / 10 * random);
 }
+void printInfected(struct region* first){
+    struct region*p;
+    for(p = first; p!=NULL; p = p->next){
+        printf("REGION %d: %d infected, %d susceptible, %d immune\n", p->regionNumber, p->infected, p->susceptible, p->immune);
+    }
+}
+void resetRegions(struct region* first, float x, float y, char state){
+    struct region*p;
+    for(p = first; p!=NULL; p = p->next){
+        if(p->xCoordinateStart <= x && p->xCoordinateEnd > x && p->yCoordinateStart <= y && p->yCoordinateEnd > y){
+            switch (state)
+            {
+            case 'i':
+                p->infected = 1;
+                break;
+            case 's':
+                p->susceptible = 1;
+            case 'c':
+                p->immune = 1;
+            
+            default:
+                break;
+            }
+        }else{
+            p->infected = 0;
+            p->immune = 0;
+            p->susceptible = 0;
+        }
+    }
+    //printInfected(first);
+}
+void updateRegions(struct region* first, float x, float y, char state){
+    struct region*p;
+     for(p = first; p!=NULL; p = p->next){
+        if(p->xCoordinateStart <= x && p->xCoordinateEnd > x && p->yCoordinateStart <= y && p->yCoordinateEnd > y){
+            switch (state)
+            {
+            case 'i':
+                p->infected += 1;
+                break;
+            case 's':
+                p->susceptible += 1;
+            case 'c':
+                p->immune += 1;
+            
+            default:
+                break;
+            }
+        }
+    }
+    //printInfected(first);
+}
+
 
 int main(int argc, char** argv){
     MPI_Init(&argc, &argv);
@@ -147,13 +211,17 @@ int main(int argc, char** argv){
     float actualyCoordinate = initialyCoordinate;
     float directionAngle;
     char state[20];
-    struct region * firstRegion = createRegions(areaWidth, areaLength, regionWidth, regionLength);
+    struct region * firstRegion;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Datatype mpi_message = createMessageType();
     
     directionAngle = 2 * PI * rank / size;
+
+    if(rank == 0){
+        firstRegion = createRegions(areaWidth, areaLength, regionWidth, regionLength);
+    }
 
     if(rank >= 0.0 && rank < infected){
         strcpy(state, "infected");
@@ -166,13 +234,17 @@ int main(int argc, char** argv){
     int iterations = 0;
     int movement = 0;
     int day = 0;
+    int timeAsInfect = 0;
+    int timeAsImmune = 0;
     double xVelocity = velocity * cos(directionAngle);
     double yVelocity = velocity * sin(directionAngle);
     unsigned long secondsInDay = 86400;
     unsigned long secondsInThreeMonths = 13089600;
+    unsigned long secondsinTenDays = 864000;
     int contactWithInfect = 0;
     bool possibleInfected = false;
     int simulatedDay = secondsInDay / simulationSeconds;
+    int simulatedTenDays = secondsinTenDays / simulationSeconds;
     int simulatedTenMinutes = secondsInTenMinutes / simulationSeconds;
     int simulatedThreeMonths = secondsInThreeMonths / simulationSeconds;
     while (1)
@@ -180,12 +252,30 @@ int main(int argc, char** argv){
         mainTimer(simulationSeconds);
         iterations++;
         movement++;
+        if(state[0] == 'i'){
+            timeAsInfect++;
+        }
+        if(state[0] == 'c'){
+            timeAsImmune ++;
+        }
+        if(timeAsInfect % simulatedTenDays == 0){
+            strcpy(state, "cured");
+            timeAsInfect = 0;
+        }
+        if(timeAsImmune % simulatedThreeMonths == 0){
+            strcpy(state, "susceptible");
+            timeAsImmune = 0;
+        }
         if(contactWithInfect != 0 && contactWithInfect % simulatedTenMinutes == 0){
             strcpy(state, "infected");
         }
-        if(iterations % simulatedDay == 0){
+        if(rank == 0){
+            resetRegions(firstRegion, actualxCoordinate, actualyCoordinate,state[0]);
+        }
+        if(iterations % simulatedDay == 0 && rank == 0){
             day++;
-            printf("[PROCESS %d] DAY %d Position: %f, %f State: %s\n", rank, day, actualxCoordinate, actualyCoordinate, state);
+            printf("day %d\n", day);
+            printInfected(firstRegion);
         }
         if (checkOutOfBound(actualxCoordinate, actualyCoordinate, areaLength / 2, areaWidth / 2))
         {
@@ -214,7 +304,11 @@ int main(int argc, char** argv){
                 MPI_Isend(sendMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &request);
                 MPI_Recv(receiveMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &status);
                 //printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
-                if(receiveMessage->processState == 'i' && calculateDistance(actualxCoordinate, actualyCoordinate, receiveMessage->xCoordinate, receiveMessage->yCoordinate) <= spreadingDistance){
+                if(rank == 0){
+                    updateRegions(firstRegion, receiveMessage->xCoordinate, receiveMessage->yCoordinate, receiveMessage->processState);
+    
+                }
+                if(receiveMessage->processState == 'i' && calculateDistance(actualxCoordinate, actualyCoordinate, receiveMessage->xCoordinate, receiveMessage->yCoordinate) <= spreadingDistance){    
                     possibleInfected = true;
                     contactWithInfect++;
                     break;
