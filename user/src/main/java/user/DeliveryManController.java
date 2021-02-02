@@ -14,7 +14,11 @@ public class DeliveryManController {
     KafkaService kafkaService;
     
     @PostMapping("/register/{name}")
-	public Long registerDeliveryMan(@PathVariable String name) {
+	public Long registerDeliveryMan(@PathVariable String name) throws UserException {
+        if (deliveryManRepository.findByName(name).isPresent()) {
+            throw new UserException("Delivery man " + name + " already exists");
+        }
+
         DeliveryMan deliveryMan = new DeliveryMan(name);
         deliveryManRepository.save(deliveryMan);
         kafkaService.notifyNewDeliveryMan(deliveryMan);

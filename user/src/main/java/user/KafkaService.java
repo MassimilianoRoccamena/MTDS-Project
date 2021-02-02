@@ -3,9 +3,12 @@ package user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.log4j.Log4j2;
+
 import org.springframework.kafka.core.KafkaTemplate;
 
 @Service
+@Log4j2
 public class KafkaService {
 
     @Autowired
@@ -25,6 +28,7 @@ public class KafkaService {
         //});
 
         kafkaTemplate.send("NewCustomer", customer.getId().toString() + " " + customer.getAddress());
+        log.info("Customer " + customer.getId().toString() + " notified");
     }
 
     public void notifyNewDeliveryMan(DeliveryMan deliveryMan) {
@@ -35,5 +39,6 @@ public class KafkaService {
         //});
 
         kafkaTemplate.send("NewDeliveryMan", deliveryMan.getId().toString());
+        log.info("Delivery man  " + deliveryMan.getId().toString() + " notified");
     }
 }

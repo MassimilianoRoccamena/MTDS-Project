@@ -14,7 +14,11 @@ public class CustomerController {
     KafkaService kafkaService;
     
     @PostMapping("/register/{name}/{address}")
-	public Long registerCustomer(@PathVariable String name, @PathVariable String address) {
+	public Long registerCustomer(@PathVariable String name, @PathVariable String address) throws UserException {
+        if (customerRepository.findByName(name).isPresent()) {
+            throw new UserException("Customer " + name + " already exists");
+        }
+
         Customer customer = new Customer(name, address);
         customerRepository.save(customer);
         kafkaService.notifyNewCustomer(customer);

@@ -16,18 +16,18 @@ public class DeliveryManController {
     DeliveryRepository deliveryRepository;
 
     @PostMapping("/{deliveryManId}/delivered/{deliveryId}")
-    public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long deliveryId) {
+    public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long deliveryId) throws ShippingException {
         Optional<DeliveryMan> deliveryMan = deliveryManRepository.findById(deliveryManId);
         if (!deliveryMan.isPresent()) {
-            // Invalid user
+            throw new ShippingException("Delivery man " + deliveryManId.toString() + " not found");
         }
 
         Optional<Delivery> delivery = deliveryRepository.findById(deliveryId);
         if (!delivery.isPresent()) {
-            // Invalid delivery
+            throw new ShippingException("Delivery " + deliveryId.toString() + " not found");
         }
         if (!delivery.get().getDeliveryManId().equals(deliveryManId)) {
-            // Invalid delivery
+            throw new ShippingException("Delivery " + deliveryId.toString() + " is not assigned to " + deliveryManId.toString());
         }
         delivery.get().setDelivered(Boolean.TRUE);
     }

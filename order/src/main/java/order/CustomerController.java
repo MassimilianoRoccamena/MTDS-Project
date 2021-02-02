@@ -20,10 +20,10 @@ public class CustomerController {
     KafkaService kafkaService;
     
     @PostMapping("{id}/order")
-	public Long submitOrder(@PathVariable Long id, @RequestBody List<Order.Field> fields) {
+	public Long submitOrder(@PathVariable Long id, @RequestBody List<Order.Field> fields) throws OrderException {
         Optional<Customer> customer = customerRepository.findById(id);
         if (!customer.isPresent()) {
-            // Invalid user
+            throw new OrderException("Customer " + id.toString() + " not found");
         }
 
         Order order = new Order(id, fields);
