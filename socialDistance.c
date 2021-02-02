@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #define PI 3.1415
-#define simulationTimeProportion 0.001
+#define simulationTimeProportion 0.00001
 #define secondsInTenMinutes 600
 
 struct region
@@ -84,13 +84,14 @@ struct region* createRegions(float areaWidth, float areaLength, float regionWidt
 void mainTimer(float simulationTime){
 
     float trigger = simulationTime * simulationTimeProportion * 1000;
-    float msec;
+    printf("trigger: %f\n", trigger);
+    float msec = 0;
     clock_t before = clock();
     do{
         clock_t difference = clock() - before;
-            msec = difference * 1000 / CLOCKS_PER_SEC;
+        msec = difference * 1000 / CLOCKS_PER_SEC;
     }while(msec < trigger);
-    //printf("The timer has been triggered at %f\n", msec);
+    printf("The timer has been triggered at %f\n", msec);
 }
 float calculateDistance(float firstx, float firsty, float secondx, float secondy){
     return sqrt(pow(firstx-secondx,2) + pow(firsty - secondy, 2));
@@ -147,6 +148,7 @@ void resetRegions(struct region* first, float x, float y, char state){
     struct region*p;
     for(p = first; p!=NULL; p = p->next){
         if(p->xCoordinateStart <= x && p->xCoordinateEnd > x && p->yCoordinateStart <= y && p->yCoordinateEnd > y){
+            //printf("x: %f y: %f state: %c. Inside region %d\n", x, y, state, p->regionNumber);
             switch (state)
             {
             case 'i':
@@ -154,9 +156,10 @@ void resetRegions(struct region* first, float x, float y, char state){
                 break;
             case 's':
                 p->susceptible = 1;
+                break;
             case 'c':
                 p->immune = 1;
-            
+                break;
             default:
                 break;
             }
@@ -172,16 +175,18 @@ void updateRegions(struct region* first, float x, float y, char state){
     struct region*p;
      for(p = first; p!=NULL; p = p->next){
         if(p->xCoordinateStart <= x && p->xCoordinateEnd > x && p->yCoordinateStart <= y && p->yCoordinateEnd > y){
+            //printf("x: %f y: %f state: %c. Inside region %d\n", x, y, state, p->regionNumber);
             switch (state)
             {
             case 'i':
-                p->infected += 1;
+                p->infected++;
                 break;
             case 's':
-                p->susceptible += 1;
+                p->susceptible++;
+                break;
             case 'c':
-                p->immune += 1;
-            
+                p->immune++;
+                break;
             default:
                 break;
             }
@@ -249,7 +254,7 @@ int main(int argc, char** argv){
     int simulatedThreeMonths = secondsInThreeMonths / simulationSeconds;
     while (1)
     {   
-        mainTimer(simulationSeconds);
+        //mainTimer(simulationSeconds);
         iterations++;
         movement++;
         if(state[0] == 'i'){
@@ -258,28 +263,30 @@ int main(int argc, char** argv){
         if(state[0] == 'c'){
             timeAsImmune ++;
         }
-        if(timeAsInfect % simulatedTenDays == 0){
+        if(timeAsInfect != 0 && timeAsInfect % simulatedTenDays == 0){
             strcpy(state, "cured");
             timeAsInfect = 0;
         }
-        if(timeAsImmune % simulatedThreeMonths == 0){
+        if(timeAsImmune != 0 && timeAsImmune % simulatedThreeMonths == 0){
             strcpy(state, "susceptible");
             timeAsImmune = 0;
         }
         if(contactWithInfect != 0 && contactWithInfect % simulatedTenMinutes == 0){
             strcpy(state, "infected");
         }
+         if(iterations % simulatedDay == 0 && rank == 0){
+            day++;
+            printf("DAY %d\n", day);
+            printInfected(firstRegion);
+        }
         if(rank == 0){
             resetRegions(firstRegion, actualxCoordinate, actualyCoordinate,state[0]);
         }
-        if(iterations % simulatedDay == 0 && rank == 0){
-            day++;
-            printf("day %d\n", day);
-            printInfected(firstRegion);
-        }
-        if (checkOutOfBound(actualxCoordinate, actualyCoordinate, areaLength / 2, areaWidth / 2))
+        float nextxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
+        float nextyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
+        if (checkOutOfBound(nextxCoordinate, nextyCoordinate, areaLength / 2, areaWidth / 2))
         {
-            directionAngle = changeDirection(actualxCoordinate, actualyCoordinate, areaLength/2, areaWidth/2, directionAngle);
+            directionAngle = changeDirection(nextxCoordinate, nextyCoordinate, areaLength/2, areaWidth/2, directionAngle);
             //printf("[PROCESS %d] Changing direction. New direction: %f\n", rank, directionAngle);
             initialxCoordinate = actualxCoordinate;
             initialyCoordinate = actualyCoordinate;
@@ -302,7 +309,7 @@ int main(int argc, char** argv){
             if(i != rank){
                 //printf("[PROCESS %d] Sending message: %f, %f, %c\n", rank, sendMessage->xCoordinate, sendMessage->yCoordinate, sendMessage->processState);
                 MPI_Isend(sendMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &request);
-                MPI_Recv(receiveMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &status);
+                MPI_Recv(receiveMessage, 1, mpi_message, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
                 //printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
                 if(rank == 0){
                     updateRegions(firstRegion, receiveMessage->xCoordinate, receiveMessage->yCoordinate, receiveMessage->processState);
