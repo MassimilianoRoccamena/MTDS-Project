@@ -20,16 +20,16 @@ import lombok.Setter;
 @Entity
 public class Order {
     
+    @Getter
+    @Setter
     @NoArgsConstructor
     @RequiredArgsConstructor
     @Embeddable
-    public class Field {
+    public static class Field {
 
-        @Getter
         @NonNull
         private String name;
 
-        @Getter
         @NonNull
         private Integer count;
     }
