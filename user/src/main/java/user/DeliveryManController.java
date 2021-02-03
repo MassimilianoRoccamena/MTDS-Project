@@ -17,19 +17,13 @@ public class DeliveryManController {
     
     @PostMapping("/register/{name}")
 	public Long registerDeliveryMan(@PathVariable String name) {
-        try {
-            
-            if (deliveryManRepository.findByName(name).isPresent()) {
-                throw new UserException("Delivery man " + name + " already exists");
-            }
-    
-            DeliveryMan deliveryMan = new DeliveryMan(name);
-            deliveryManRepository.save(deliveryMan);
-            kafkaService.notifyNewDeliveryMan(deliveryMan);
-            return deliveryMan.getId();
-
-        } catch (UserException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        if (deliveryManRepository.findByName(name).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery man " + name + " already exists");
         }
+
+        DeliveryMan deliveryMan = new DeliveryMan(name);
+        deliveryManRepository.save(deliveryMan);
+        kafkaService.notifyNewDeliveryMan(deliveryMan);
+        return deliveryMan.getId();
 	}
 }

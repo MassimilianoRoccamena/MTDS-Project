@@ -22,19 +22,13 @@ public class CustomerController {
     
     @PostMapping("{id}/order")
 	public Long submitOrder(@PathVariable Long id, @RequestBody List<Order.Field> fields) {
-        try {
-            
-            if (!customerRepository.findById(id).isPresent()) {
-                throw new OrderException("Customer " + id.toString() + " not found");
-            }
-    
-            Order order = new Order(id, fields);
-            orderRepository.save(order);
-            kafkaService.notifyNewOrder(order);
-            return order.getId();
-
-        } catch (OrderException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        if (!customerRepository.findById(id).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer " + id.toString() + " not found");
         }
+
+        Order order = new Order(id, fields);
+        orderRepository.save(order);
+        kafkaService.notifyNewOrder(order);
+        return order.getId();
 	}
 }

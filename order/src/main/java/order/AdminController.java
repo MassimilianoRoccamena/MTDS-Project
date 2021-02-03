@@ -17,33 +17,21 @@ public class AdminController {
     
     @PostMapping("/add/{name}")
 	public Long addProduct(@PathVariable String name) {
-        try {
-
-            if (productRepository.findByName(name).isPresent()) {
-                throw new OrderException("Product " + name + " already exists");
-            }
-    
-            Product product = new Product(name);
-            productRepository.save(product);
-            return product.getId();
-
-        } catch (OrderException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        if (productRepository.findByName(name).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product " + name + " already exists");
         }
+
+        Product product = new Product(name);
+        productRepository.save(product);
+        return product.getId();
     }
     
     @DeleteMapping("/delete/{id}")
 	public void deleteProduct(@PathVariable Long id) {
-        try {
-
-            if (!productRepository.findById(id).isPresent()) {
-                throw new OrderException("Product " + id.toString() + " not found");
-            }
-    
-            productRepository.deleteById(id);
-
-        } catch (OrderException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        if (!productRepository.findById(id).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product " + id.toString() + " not found");
         }
+
+        productRepository.deleteById(id);
 	}
 }

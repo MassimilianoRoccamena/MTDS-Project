@@ -19,25 +19,17 @@ public class DeliveryManController {
 
     @PostMapping("/{deliveryManId}/delivered/{deliveryId}")
     public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long deliveryId) {
-        HttpStatus httpStatus = HttpStatus.NOT_FOUND;
-        try {
-            
-            if (!deliveryManRepository.findById(deliveryManId).isPresent()) {
-                throw new ShippingException("Delivery man " + deliveryManId.toString() + " not found");
-            }
-
-            Optional<Delivery> delivery = deliveryRepository.findById(deliveryId);
-            if (!delivery.isPresent()) {
-                throw new ShippingException("Delivery " + deliveryId.toString() + " not found");
-            }
-            if (!delivery.get().getDeliveryManId().equals(deliveryManId)) {
-                httpStatus = HttpStatus.BAD_REQUEST;
-                throw new ShippingException("Delivery " + deliveryId.toString() + " is not assigned to " + deliveryManId.toString());
-            }
-            delivery.get().setDelivered(Boolean.TRUE);
-
-        } catch (ShippingException ex) {
-            throw new ResponseStatusException(httpStatus, ex.getMessage());
+        if (!deliveryManRepository.findById(deliveryManId).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Delivery man " + deliveryManId.toString() + " not found");
         }
+
+        Optional<Delivery> delivery = deliveryRepository.findById(deliveryId);
+        if (!delivery.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Delivery " + deliveryId.toString() + " not found");
+        }
+        if (!delivery.get().getDeliveryManId().equals(deliveryManId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery " + deliveryId.toString() + " is not assigned to " + deliveryManId.toString());
+        }
+        delivery.get().setDelivered(Boolean.TRUE);
     }
 }

@@ -17,19 +17,13 @@ public class CustomerController {
     
     @PostMapping("/register/{name}/{address}")
 	public Long registerCustomer(@PathVariable String name, @PathVariable String address) {
-        try {
-
-            if (customerRepository.findByName(name).isPresent()) {
-                throw new UserException("Customer " + name + " already exists");
-            }
-    
-            Customer customer = new Customer(name, address);
-            customerRepository.save(customer);
-            kafkaService.notifyNewCustomer(customer);
-            return customer.getId();
-
-        } catch (UserException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        if (customerRepository.findByName(name).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer " + name + " already exists");
         }
+
+        Customer customer = new Customer(name, address);
+        customerRepository.save(customer);
+        kafkaService.notifyNewCustomer(customer);
+        return customer.getId();
 	}
 }
