@@ -20,7 +20,7 @@ public class KafkaService {
     @KafkaListener(topics = "NewDeliveryMan")
     public void onNewDeliveryMan(String message) {
         DeliveryMan deliveryMan = new DeliveryMan(Long.parseLong(message));
-        log.info("Received delivery " + deliveryMan.toString());
+        log.info("Received delivery man " + deliveryMan.getId().toString());
         deliveryManRepository.save(deliveryMan);
     }
 
@@ -30,11 +30,8 @@ public class KafkaService {
         Long orderId = Long.parseLong(splittedMessage[0]);
         log.info("Received order " + orderId.toString());
         String customerAddress = splittedMessage[1];
-        Delivery delivery = new Delivery(orderId, getFreeDeliveryManId(), customerAddress);
+        DeliveryMan deliveryMan = deliveryManRepository.getRandom().get(0);
+        Delivery delivery = new Delivery(orderId, deliveryMan.getId(), customerAddress);
         deliveryRepository.save(delivery);
-    }
-
-    public Long getFreeDeliveryManId() {
-        return deliveryManRepository.findById(Long.parseLong("1")).get().getId();
     }
 }

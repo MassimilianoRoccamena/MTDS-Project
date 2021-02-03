@@ -9,33 +9,42 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Data
+@NoArgsConstructor
+@RequiredArgsConstructor
 @Entity
 public class Order {
     
-    @Data
+    @NoArgsConstructor
+    @RequiredArgsConstructor
     @Embeddable
     public class Field {
 
+        @Getter
         @NonNull
-        private String productName;
+        private String name;
 
+        @Getter
         @NonNull
         private Integer count;
     }
 
+    @Getter
     @Id
     @GeneratedValue
     @Column
     private Long id;
     
+    @Getter
     @NonNull
     @Column
     private Long customerId;
     
+    @Getter
     @NonNull
     @ElementCollection
     @Column

@@ -4,18 +4,23 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Column;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Data
+@NoArgsConstructor
+@RequiredArgsConstructor
 @Entity
 public class Customer {
     
+    @Getter
     @Id
     @NonNull
     @Column
     private Long id;
 
+    @Getter
     @NonNull
     @Column
     private String address;
