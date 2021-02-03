@@ -17,7 +17,10 @@ public class DeliveryManController {
     @Autowired
     DeliveryRepository deliveryRepository;
 
-    @PostMapping("/{deliveryManId}/delivered/{deliveryId}")
+    @Autowired
+    KafkaService kafkaService;
+
+    @PostMapping("/{deliveryManId}/deliver/{deliveryId}")
     public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long deliveryId) {
         if (!deliveryManRepository.findById(deliveryManId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Delivery man " + deliveryManId.toString() + " not found");
@@ -30,6 +33,11 @@ public class DeliveryManController {
         if (!delivery.get().getDeliveryManId().equals(deliveryManId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery " + deliveryId.toString() + " is not assigned to " + deliveryManId.toString());
         }
+        if (delivery.get().getDelivered()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery " + deliveryId.toString() + " has been already delivered");
+        }
+
         delivery.get().setDelivered(Boolean.TRUE);
+        kafkaService.notifyOrderDelivered(delivery.get());
     }
 }

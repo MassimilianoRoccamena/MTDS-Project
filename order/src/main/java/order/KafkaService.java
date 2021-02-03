@@ -16,6 +16,9 @@ public class KafkaService {
     CustomerRepository customerRepository;
 
     @Autowired
+    OrderRepository OrderRepository;
+
+    @Autowired
     KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "NewCustomer")
@@ -26,6 +29,14 @@ public class KafkaService {
         String customerAddress = splittedMessage[1];
         Customer customer = new Customer(customerId, customerAddress);
         customerRepository.save(customer);
+    }
+    
+    @KafkaListener(topics = "OrderDelivered")
+    public void onOrderDelivered(String message) {
+        Long orderId = Long.parseLong(message);
+        log.info("Received delivery of order " + orderId.toString());
+        Order order = OrderRepository.findById(orderId).get();
+        order.setDelivered(Boolean.TRUE);
     }
     
     public void notifyNewOrder(Order order) {

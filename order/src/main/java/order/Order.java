@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @NoArgsConstructor
 @RequiredArgsConstructor
@@ -49,4 +50,9 @@ public class Order {
     @ElementCollection
     @Column
     private List<Field> fields;
+
+    @Getter
+    @Setter
+    @Column
+    private Boolean delivered = Boolean.FALSE;
 }

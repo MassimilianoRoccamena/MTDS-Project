@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 
 @Service
 @Log4j2
@@ -16,6 +17,9 @@ public class KafkaService {
 
     @Autowired
     DeliveryRepository deliveryRepository;
+
+    @Autowired
+    KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "NewDeliveryMan")
     public void onNewDeliveryMan(String message) {
@@ -33,5 +37,10 @@ public class KafkaService {
         DeliveryMan deliveryMan = deliveryManRepository.getRandom().get(0);
         Delivery delivery = new Delivery(orderId, deliveryMan.getId(), customerAddress);
         deliveryRepository.save(delivery);
+    }
+
+    public void notifyOrderDelivered(Delivery delivery) {
+        kafkaTemplate.send("OrderDelivered", delivery.getOrderId().toString());
+        log.info("Delivery " + delivery.getOrderId().toString() + " notified");
     }
 }
