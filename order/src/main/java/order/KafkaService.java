@@ -1,5 +1,7 @@
 package order;
 
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +32,7 @@ public class KafkaService {
         Customer customer = new Customer(customerId, customerAddress);
         customerRepository.save(customer);
     }
-    
+
     @KafkaListener(topics = "OrderDelivered")
     public void onOrderDelivered(String message) {
         Long orderId = Long.parseLong(message);
@@ -39,10 +41,14 @@ public class KafkaService {
         order.setDelivered(Boolean.TRUE);
         orderRepository.save(order);
     }
-    
+
     public void notifyNewOrder(Order order) {
         Customer customer = customerRepository.findById(order.getCustomerId()).get();
-        kafkaTemplate.send("NewOrder", order.getId().toString() + " " + customer.getAddress());
+        try {
+            kafkaTemplate.send("NewOrder", order.getId().toString() + " " + customer.getAddress()).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e.getMessage());
+        }
         log.info("Order " + order.getId().toString() + " notified");
     }
 }

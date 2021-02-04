@@ -1,5 +1,7 @@
 package shipping;
 
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +42,11 @@ public class KafkaService {
     }
 
     public void notifyOrderDelivered(Order order) {
-        kafkaTemplate.send("OrderDelivered", order.getId().toString());
+        try {
+            kafkaTemplate.send("OrderDelivered", order.getId().toString()).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e.getMessage());
+        }
         log.info("Delivery of order " + order.getId().toString() + " notified");
     }
 }
