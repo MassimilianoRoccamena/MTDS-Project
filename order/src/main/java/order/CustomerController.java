@@ -15,6 +15,9 @@ public class CustomerController {
     CustomerRepository customerRepository;
 
     @Autowired
+    ProductRepository productRepository;
+
+    @Autowired
     OrderRepository orderRepository;
 
     @Autowired
@@ -26,9 +29,20 @@ public class CustomerController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer " + id.toString() + " not found");
         }
 
+        for (Order.Field field : fields) {
+            if (!productRepository.findByName(field.getName()).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product " + field.getName() + " not found");
+            }
+        }
+
         Order order = new Order(id, fields);
         orderRepository.save(order);
         kafkaService.notifyNewOrder(order);
         return order.getId();
-	}
+    }
+    
+    @GetMapping("{id}/myOrders")
+    public Iterable<Order> getMyOrders(@PathVariable Long id) {
+        return orderRepository.findAllByCustomerId(id);
+    }
 }

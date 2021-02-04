@@ -42,4 +42,9 @@ public class DeliveryManController {
         deliveryRepository.save(delivery);
         kafkaService.notifyOrderDelivered(delivery);
     }
+
+    @GetMapping("/{id}/myDeliveries")
+    public Iterable<Delivery> getMyDeliveries(@PathVariable Long id) {
+        return deliveryRepository.findAllByDeliveryManId(id);
+    }
 }
