@@ -34,9 +34,9 @@ public class KafkaService {
     public void onNewOrder(String message) {
         String[] splittedMessage = message.split(" ");
         Long orderId = Long.parseLong(splittedMessage[0]);
-        log.info("Received order " + orderId.toString());
         String customerAddress = splittedMessage[1];
         DeliveryMan deliveryMan = deliveryManRepository.getRandom().get(0);
+        log.info("Received order " + orderId.toString() + ", assigned to " + deliveryMan.getId().toString());
         Order order = new Order(orderId, deliveryMan.getId(), customerAddress);
         orderRepository.save(order);
     }

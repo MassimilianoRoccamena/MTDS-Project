@@ -14,7 +14,7 @@ public class CheckController {
     @Autowired
     OrderRepository orderRepository;
     
-    @GetMapping("/deliveryMan/all")
+    @GetMapping("/delivery/all")
     public Iterable<DeliveryMan> getAllDeliveryMen() {
         return deliveryManRepository.findAll();
     }

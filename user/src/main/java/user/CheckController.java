@@ -19,7 +19,7 @@ public class CheckController {
         return customerRepository.findAll();
     }
     
-    @GetMapping("/deliveryMan/all")
+    @GetMapping("/delivery/all")
     public Iterable<DeliveryMan> getAllDeliveryMen() {
         return deliveryManRepository.findAll();
     }
