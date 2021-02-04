@@ -16,7 +16,7 @@ public class KafkaService {
     CustomerRepository customerRepository;
 
     @Autowired
-    OrderRepository OrderRepository;
+    OrderRepository orderRepository;
 
     @Autowired
     KafkaTemplate<String, String> kafkaTemplate;
@@ -35,8 +35,9 @@ public class KafkaService {
     public void onOrderDelivered(String message) {
         Long orderId = Long.parseLong(message);
         log.info("Received delivery of order " + orderId.toString());
-        Order order = OrderRepository.findById(orderId).get();
+        Order order = orderRepository.findById(orderId).get();
         order.setDelivered(Boolean.TRUE);
+        orderRepository.save(order);
     }
     
     public void notifyNewOrder(Order order) {

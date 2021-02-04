@@ -5,6 +5,7 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
@@ -18,12 +19,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @RequiredArgsConstructor
 @Entity
+@Table(name = "customer_order")
 public class Order {
     
+    @NoArgsConstructor
     @Getter
     @Setter
-    @NoArgsConstructor
-    @RequiredArgsConstructor
     @Embeddable
     public static class Field {
 
