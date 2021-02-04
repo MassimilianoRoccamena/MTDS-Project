@@ -12,16 +12,15 @@ import lombok.RequiredArgsConstructor;
 
 @NoArgsConstructor
 @RequiredArgsConstructor
+@Getter
 @Entity
 public class DeliveryMan {
     
-    @Getter
     @Id
     @GeneratedValue
     @Column
     private Long id;
     
-    @Getter
     @NonNull
     @Column(unique = true)
     private String name;

@@ -1,7 +1,6 @@
 package shipping;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Column;
 
@@ -13,31 +12,23 @@ import lombok.Setter;
 
 @NoArgsConstructor
 @RequiredArgsConstructor
+@Getter
 @Entity
 public class Delivery {
-
-    @Getter
-    @Id
-    @GeneratedValue
-    @Column
-    private Long id;
     
-    @Getter
+    @Id
     @NonNull
-    @Column(unique = true)
+    @Column
     private Long orderId;
     
-    @Getter
     @NonNull
     @Column
     private Long deliveryManId;
 
-    @Getter
     @NonNull
     @Column
     private String address;
 
-    @Getter
     @Setter
     @Column
     private Boolean delivered = Boolean.FALSE;

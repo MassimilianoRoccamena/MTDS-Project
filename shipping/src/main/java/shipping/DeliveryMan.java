@@ -11,10 +11,10 @@ import lombok.RequiredArgsConstructor;
 
 @NoArgsConstructor
 @RequiredArgsConstructor
+@Getter
 @Entity
 public class DeliveryMan {
     
-    @Getter
     @Id
     @NonNull
     @Column

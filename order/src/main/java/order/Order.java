@@ -18,6 +18,7 @@ import lombok.Setter;
 
 @NoArgsConstructor
 @RequiredArgsConstructor
+@Getter
 @Entity
 @Table(name = "customer_order")
 public class Order {
@@ -35,24 +36,20 @@ public class Order {
         private Integer count;
     }
 
-    @Getter
     @Id
     @GeneratedValue
     @Column
     private Long id;
     
-    @Getter
     @NonNull
     @Column
     private Long customerId;
     
-    @Getter
     @NonNull
     @ElementCollection
     @Column
     private List<Field> fields;
 
-    @Getter
     @Setter
     @Column
     private Boolean delivered = Boolean.FALSE;
