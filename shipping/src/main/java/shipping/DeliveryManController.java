@@ -15,36 +15,36 @@ public class DeliveryManController {
     DeliveryManRepository deliveryManRepository;
 
     @Autowired
-    DeliveryRepository deliveryRepository;
+    OrderRepository orderRepository;
 
     @Autowired
     KafkaService kafkaService;
 
-    @PostMapping("/{deliveryManId}/deliver/{deliveryId}")
-    public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long deliveryId) {
+    @PostMapping("/{deliveryManId}/deliver/{orderId}")
+    public void notifyDelivery(@PathVariable Long deliveryManId, @PathVariable Long orderId) {
         if (!deliveryManRepository.findById(deliveryManId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Delivery man " + deliveryManId.toString() + " not found");
         }
 
-        Optional<Delivery> optionalDelivery = deliveryRepository.findById(deliveryId);
-        if (!optionalDelivery.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Delivery " + deliveryId.toString() + " not found");
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        if (!optionalOrder.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order " + orderId.toString() + " not found");
         }
-        if (!optionalDelivery.get().getDeliveryManId().equals(deliveryManId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery " + deliveryId.toString() + " is not assigned to " + deliveryManId.toString());
+        if (!optionalOrder.get().getDeliveryManId().equals(deliveryManId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order " + orderId.toString() + " is not assigned to " + deliveryManId.toString());
         }
-        if (optionalDelivery.get().getDelivered()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery " + deliveryId.toString() + " has been already delivered");
+        if (optionalOrder.get().getDelivered()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order " + orderId.toString() + " has been already delivered");
         }
 
-        Delivery delivery = optionalDelivery.get();
-        delivery.setDelivered(Boolean.TRUE);
-        deliveryRepository.save(delivery);
-        kafkaService.notifyOrderDelivered(delivery);
+        Order order = optionalOrder.get();
+        order.setDelivered(Boolean.TRUE);
+        orderRepository.save(order);
+        kafkaService.notifyOrderDelivered(order);
     }
 
-    @GetMapping("/{id}/myDeliveries")
-    public Iterable<Delivery> getMyDeliveries(@PathVariable Long id) {
-        return deliveryRepository.findAllByDeliveryManId(id);
+    @GetMapping("/{id}/myOrders")
+    public Iterable<Order> getMyOrders(@PathVariable Long id) {
+        return orderRepository.findAllByDeliveryManId(id);
     }
 }

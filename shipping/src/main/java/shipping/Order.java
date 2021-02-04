@@ -2,6 +2,7 @@ package shipping;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.persistence.Column;
 
 import lombok.Getter;
@@ -14,12 +15,13 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Entity
-public class Delivery {
+@Table(name = "customer_order")
+public class Order {
     
     @Id
     @NonNull
     @Column
-    private Long orderId;
+    private Long id;
     
     @NonNull
     @Column
@@ -27,7 +29,7 @@ public class Delivery {
 
     @NonNull
     @Column
-    private String address;
+    private String customerAddress;
 
     @Setter
     @Column

@@ -16,7 +16,7 @@ public class KafkaService {
     DeliveryManRepository deliveryManRepository;
 
     @Autowired
-    DeliveryRepository deliveryRepository;
+    OrderRepository orderRepository;
 
     @Autowired
     KafkaTemplate<String, String> kafkaTemplate;
@@ -35,12 +35,12 @@ public class KafkaService {
         log.info("Received order " + orderId.toString());
         String customerAddress = splittedMessage[1];
         DeliveryMan deliveryMan = deliveryManRepository.getRandom().get(0);
-        Delivery delivery = new Delivery(orderId, deliveryMan.getId(), customerAddress);
-        deliveryRepository.save(delivery);
+        Order order = new Order(orderId, deliveryMan.getId(), customerAddress);
+        orderRepository.save(order);
     }
 
-    public void notifyOrderDelivered(Delivery delivery) {
-        kafkaTemplate.send("OrderDelivered", delivery.getOrderId().toString());
-        log.info("Delivery " + delivery.getOrderId().toString() + " notified");
+    public void notifyOrderDelivered(Order order) {
+        kafkaTemplate.send("OrderDelivered", order.getId().toString());
+        log.info("Delivery of order " + order.getId().toString() + " notified");
     }
 }

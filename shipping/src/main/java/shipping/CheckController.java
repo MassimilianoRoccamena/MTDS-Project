@@ -12,15 +12,15 @@ public class CheckController {
     DeliveryManRepository deliveryManRepository;
 
     @Autowired
-    DeliveryRepository deliveryRepository;
+    OrderRepository orderRepository;
     
     @GetMapping("/deliveryMan/all")
     public Iterable<DeliveryMan> getAllDeliveryMen() {
         return deliveryManRepository.findAll();
     }
 
-    @GetMapping("/delivery/all")
-    public Iterable<Delivery> getAllDeliveries() {
-        return deliveryRepository.findAll();
+    @GetMapping("/order/all")
+    public Iterable<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 }
