@@ -23,6 +23,8 @@ public class Query
     public static void main( String[] args )
     {
         // Setup
+        LogUtils.setLogLevel();
+
         final String master = args.length > 0 ? args[0] : "local[4]";
         final String filePath = args.length > 1 ? args[1] : "./";
         final String appName = useCache ? name+"WithCache" : name+"NoCache";
@@ -34,26 +36,31 @@ public class Query
                 .getOrCreate();
 
         final List<StructField> schemaFields = new ArrayList<StructField>();
-        schemaFields.add(DataTypes.createStructField("country", DataTypes.StringType, true));
-        schemaFields.add(DataTypes.createStructField("day", DataTypes.IntegerType, true));
-        schemaFields.add(DataTypes.createStructField("cases", DataTypes.IntegerType, true));
+        schemaFields.add(DataTypes.createStructField("country", DataTypes.StringType, false));
+        schemaFields.add(DataTypes.createStructField("day", DataTypes.IntegerType, false));
+        schemaFields.add(DataTypes.createStructField("cases", DataTypes.IntegerType, false));
         final StructType schema = DataTypes.createStructType(schemaFields);
 
         Dataset<Row> df = spark.read()
-                                    .option("header", "false")
+                                    .format("csv")
+                                    .option("header", "true")
                                     .option("delimiter", ",")
                                     .schema(schema)
                                     .load("data/test.csv");
 
+        System.out.println("<--- INPUT --->\n");
+        df.show();
+
         // Q1
         WindowSpec window = Window.partitionBy("country")
                                             .orderBy("day")
-                                            .rangeBetween(-7, 0);
+                                            .rangeBetween(-2, 0);
 
         df = df.withColumn("Q1", 
-                                                avg("cases").over(window));
+                                avg("cases").over(window));
         
-        df.persist();
+        //df.persist();
+        System.out.println("<--- QUERY1 --->\n");
         df.show();
 
         // Q2
@@ -62,21 +69,26 @@ public class Query
 
         df = df.withColumn("lagged",
                                      lag(df.col("Q1"), 1).over(window));
+        
+        df = df.withColumn("lagged",
+                                     when(df.col("lagged").isNull(), df.col("Q1")).otherwise(df.col("lagged")));  // Replace nulls with not lagged
 
         df = df.withColumn("Q2",
-                                    expr("cases/lagged").over(window));
+                                    expr("cases/lagged"));
 
         df = df.drop("lagged");
 
-        df.persist();
+        //df.persist();
+        System.out.println("<--- QUERY2 --->\n");
         df.show();
 
         // Q3
 
-        df.groupBy("country").agg(sum("Q2"));
+        df = df.groupBy("country").agg(sum("Q2"));
 
-        df = df.orderBy(desc("sum(Q2)")).limit(10).select("country");
+        df = df.orderBy(desc("sum(Q2)")).limit(10).select("country", "sum(Q2)");
 
+        System.out.println("<--- QUERY3 --->\n");
         df.show();
         
         // Close

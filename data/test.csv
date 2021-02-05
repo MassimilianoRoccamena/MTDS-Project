@@ -1,6 +1,11 @@
-italy, 0, 1000
-france, 0, 3000
-italy, 1, 1500
-france, 1, 2500
-italy, 2, 2000
-france, 2, 2000
+country,day,cases
+italy,0,1000
+france,0,3000
+italy,1,1500
+france,1,2500
+italy,2,2000
+france,2,2000
+italy,3,2400
+france,3,2100
+italy,4,2200
+france,3,1900
