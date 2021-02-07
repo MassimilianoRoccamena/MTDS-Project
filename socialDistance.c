@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #define PI 3.1415
-#define simulationTimeProportion 0.00001
+#define simulationTimeProportion 0.01
 #define secondsInTenMinutes 600
 
 struct region
@@ -80,18 +80,6 @@ struct region* createRegions(float areaWidth, float areaLength, float regionWidt
     }
     return firstRegion;
     
-}
-void mainTimer(float simulationTime){
-
-    float trigger = simulationTime * simulationTimeProportion * 1000;
-    printf("trigger: %f\n", trigger);
-    float msec = 0;
-    clock_t before = clock();
-    do{
-        clock_t difference = clock() - before;
-        msec = difference * 1000 / CLOCKS_PER_SEC;
-    }while(msec < trigger);
-    printf("The timer has been triggered at %f\n", msec);
 }
 float calculateDistance(float firstx, float firsty, float secondx, float secondy){
     return sqrt(pow(firstx-secondx,2) + pow(firsty - secondy, 2));
@@ -222,13 +210,13 @@ int main(int argc, char** argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Datatype mpi_message = createMessageType();
     
-    directionAngle = 2 * PI * rank / size;
+    directionAngle = 2 * PI * rank / individuals;
 
     if(rank == 0){
         firstRegion = createRegions(areaWidth, areaLength, regionWidth, regionLength);
     }
 
-    if(rank >= 0.0 && rank < infected){
+    if(rank >= 0 && rank < infected){
         strcpy(state, "infected");
     }else
     {
@@ -241,93 +229,99 @@ int main(int argc, char** argv){
     int day = 0;
     int timeAsInfect = 0;
     int timeAsImmune = 0;
+    float iterationTime = simulationSeconds / simulationTimeProportion;
     double xVelocity = velocity * cos(directionAngle);
     double yVelocity = velocity * sin(directionAngle);
     unsigned long secondsInDay = 86400;
-    unsigned long secondsInThreeMonths = 13089600;
+    unsigned long secondsInThreeMonths = 7776000;
     unsigned long secondsinTenDays = 864000;
+    int simulatedDay = secondsInDay / iterationTime;
+    int simulatedTenDays = secondsinTenDays / iterationTime;
+    int simulatedTenMinutes = secondsInTenMinutes / iterationTime;
+    int simulatedThreeMonths = secondsInThreeMonths / iterationTime;
     int contactWithInfect = 0;
     bool possibleInfected = false;
-    int simulatedDay = secondsInDay / simulationSeconds;
-    int simulatedTenDays = secondsinTenDays / simulationSeconds;
-    int simulatedTenMinutes = secondsInTenMinutes / simulationSeconds;
-    int simulatedThreeMonths = secondsInThreeMonths / simulationSeconds;
-    while (1)
-    {   
-        //mainTimer(simulationSeconds);
-        iterations++;
-        movement++;
-        if(state[0] == 'i'){
-            timeAsInfect++;
-        }
-        if(state[0] == 'c'){
-            timeAsImmune ++;
-        }
-        if(timeAsInfect != 0 && timeAsInfect % simulatedTenDays == 0){
-            strcpy(state, "cured");
-            timeAsInfect = 0;
-        }
-        if(timeAsImmune != 0 && timeAsImmune % simulatedThreeMonths == 0){
-            strcpy(state, "susceptible");
-            timeAsImmune = 0;
-        }
-        if(contactWithInfect != 0 && contactWithInfect % simulatedTenMinutes == 0){
-            strcpy(state, "infected");
-        }
-         if(iterations % simulatedDay == 0 && rank == 0){
-            day++;
-            printf("DAY %d\n", day);
-            printInfected(firstRegion);
-        }
-        if(rank == 0){
-            resetRegions(firstRegion, actualxCoordinate, actualyCoordinate,state[0]);
-        }
-        float nextxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
-        float nextyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
-        if (checkOutOfBound(nextxCoordinate, nextyCoordinate, areaLength / 2, areaWidth / 2))
-        {
-            directionAngle = changeDirection(nextxCoordinate, nextyCoordinate, areaLength/2, areaWidth/2, directionAngle);
-            //printf("[PROCESS %d] Changing direction. New direction: %f\n", rank, directionAngle);
-            initialxCoordinate = actualxCoordinate;
-            initialyCoordinate = actualyCoordinate;
-            movement = 1;
-            xVelocity = velocity * cos(directionAngle);
-            yVelocity = velocity * sin(directionAngle); 
-        }
-        actualxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
-        actualyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
-        //printf("[PROCESS %d] x: %f y: %f\n", rank, actualxCoordinate, actualyCoordinate);
-        message *sendMessage =  malloc(sizeof(message));
-        message *receiveMessage =  malloc(sizeof(message));
-        sendMessage->xCoordinate = actualxCoordinate;
-        sendMessage->yCoordinate = actualyCoordinate;
-        sendMessage->processState = state[0];
-        MPI_Request request;
-        MPI_Status status;
-        for (int i = 0; i < size; i++)
-        {
-            if(i != rank){
-                //printf("[PROCESS %d] Sending message: %f, %f, %c\n", rank, sendMessage->xCoordinate, sendMessage->yCoordinate, sendMessage->processState);
-                MPI_Isend(sendMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &request);
-                MPI_Recv(receiveMessage, 1, mpi_message, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                //printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
-                if(rank == 0){
-                    updateRegions(firstRegion, receiveMessage->xCoordinate, receiveMessage->yCoordinate, receiveMessage->processState);
     
-                }
-                if(receiveMessage->processState == 'i' && calculateDistance(actualxCoordinate, actualyCoordinate, receiveMessage->xCoordinate, receiveMessage->yCoordinate) <= spreadingDistance){    
-                    possibleInfected = true;
-                    contactWithInfect++;
-                    break;
-                }
+    while (1)
+    {       iterations++;
+            movement++;
+            if(state[0] == 'i'){
+                timeAsInfect++;
             }
-            possibleInfected = false;
-        }
-        free(sendMessage);
-        free(receiveMessage);
-        if(!possibleInfected){
-            contactWithInfect = 0;
-        } 
+            if(state[0] == 'c'){
+                timeAsImmune ++;
+            }
+            if(timeAsInfect != 0 && timeAsInfect % simulatedTenDays == 0){
+                strcpy(state, "cured");
+                timeAsInfect = 0;
+            }
+            if(timeAsImmune != 0 && timeAsImmune % simulatedThreeMonths == 0){
+                strcpy(state, "susceptible");
+                timeAsImmune = 0;
+            }
+            if(contactWithInfect != 0 && contactWithInfect % simulatedTenMinutes == 0){
+                strcpy(state, "infected");
+            }
+            if(iterations % simulatedDay == 0 && rank == 0){
+                day++;
+                printf("DAY %d\n", day);
+                printInfected(firstRegion);
+            }
+            if(rank == 0){
+                resetRegions(firstRegion, actualxCoordinate, actualyCoordinate,state[0]);
+            }
+            float nextxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
+            float nextyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
+            while(checkOutOfBound(nextxCoordinate, nextyCoordinate, areaLength / 2, areaWidth / 2)){
+                directionAngle = changeDirection(nextxCoordinate, nextyCoordinate, areaLength/2, areaWidth/2, directionAngle);
+                initialxCoordinate = actualxCoordinate;
+                initialyCoordinate = actualyCoordinate;
+                movement = 1;
+                xVelocity = velocity * cos(directionAngle);
+                yVelocity = velocity * sin(directionAngle);
+                nextxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
+                nextyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement; 
+            }
+
+            actualxCoordinate = initialxCoordinate + xVelocity * simulationSeconds * movement;
+            actualyCoordinate = initialyCoordinate + yVelocity * simulationSeconds * movement;
+            //printf("[PROCESS %d] x: %f y: %f\n", rank, actualxCoordinate, actualyCoordinate);
+            message *sendMessage =  malloc(sizeof(message));
+            message *receiveMessage =  malloc(sizeof(message));
+            sendMessage->xCoordinate = actualxCoordinate;
+            sendMessage->yCoordinate = actualyCoordinate;
+            sendMessage->processState = state[0];
+            MPI_Request request;
+            for(int i = 0; i < individuals; i++){
+                MPI_Isend(sendMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, &request);
+            }
+            //MPI_Bcast(sendMessage, 1, mpi_message, rank, MPI_COMM_WORLD);
+            for (int i = 0; i < individuals; i++)
+            {
+                if(i != rank){
+                    MPI_Recv(receiveMessage, 1, mpi_message, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    //MPI_Bcast(receiveMessage, 1, mpi_message, i, MPI_COMM_WORLD);
+                    //printf("[PROCESS %d] Message received from %d XCoordinate: %f YCoordinate: %f state: %c\n",rank, i, receiveMessage->xCoordinate,receiveMessage->yCoordinate, receiveMessage->processState);
+                    if(rank == 0){
+                        updateRegions(firstRegion, receiveMessage->xCoordinate, receiveMessage->yCoordinate, receiveMessage->processState);
+        
+                    }
+                    if(receiveMessage->processState == 'i' && state[0] == 's' && calculateDistance(actualxCoordinate, actualyCoordinate, receiveMessage->xCoordinate, receiveMessage->yCoordinate) <= spreadingDistance){    
+                        possibleInfected = true;
+                        contactWithInfect++;
+                        //printf("[PROCESS %d] Possible infection found\n", rank);
+                        break;
+                    }
+                }
+                possibleInfected = false;
+            }
+            free(sendMessage);
+            free(receiveMessage);
+            if(!possibleInfected){
+                contactWithInfect = 0;
+            }       
+            MPI_Barrier(MPI_COMM_WORLD);
+            //printf("[PROCESS %d] Barrier reached\n", rank); 
     }
     
     MPI_Type_free(&mpi_message);
