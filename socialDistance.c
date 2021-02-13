@@ -214,20 +214,21 @@ void updateRegions(struct region* first, float x, float y, char state){
 }
 void checkInfected(struct individual *individual, int numberOfProcesses, int individuals, struct message individualList[numberOfProcesses][individuals], int rank, float safeDistance){
     if(individual->state != 's'){
-        return;
     }else{
         for(int j = 0; j < numberOfProcesses; j++){
             for(int i = 0; i < individuals;  i++){
                 struct message m = individualList[j][i];
-                if(rank != j && i != individual->number && calculateDistance(individual->actualXPosition, individual->actualYPosition, m.xCoordinate,m.yCoordinate) <= safeDistance){
+                //printf("[PROCESS %d INDIVDUAL %d] x: %f y:%f state: %c\n", j, i, m.xCoordinate, m.yCoordinate, m.state);
+                if(m.state == 'i' && calculateDistance(individual->actualXPosition, individual->actualYPosition, m.xCoordinate,m.yCoordinate) <= safeDistance){
                     individual->contactWithInfect++;
+                    //printf("PROCESS %d INDIVIDUAL %d had contact with infect: %d\n", rank, individual->number, individual->contactWithInfect);
                     return;
                 }
             }
         }
         individual->contactWithInfect = 0;
-        return;
     }
+    return;
     
 }
 
@@ -266,7 +267,7 @@ int main(int argc, char** argv){
     printf("[PROCESS %d] Number of individuals: %d\n", rank, localIndividuals);
     printf("[PROCESS %d] Number of infected: %d\n", rank, localInfected);
     firstIndividual = createIndividuals(localInfected, localIndividuals, rank, individuals, velocity);
-    MPI_Type_contiguous(localIndividuals, single_individual_message, &all_individuals_message);
+    MPI_Type_contiguous(maxSize, single_individual_message, &all_individuals_message);
     MPI_Type_commit(&all_individuals_message);
 
     unsigned long secondsInDay = 86400;
