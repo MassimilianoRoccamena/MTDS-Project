@@ -100,15 +100,25 @@ struct region* createRegions(float areaWidth, float areaLength, float regionWidt
 }
 struct individual* createIndividuals(int localInfected, int localIndividuals, int rank, float width, float length, float velocity){
     struct individual* firstIndividual = NULL;
+    int random = 1 / MPI_Wtime();
     for (int i = 0; i < localIndividuals; i++)
     {
         struct individual* newIndividual = malloc(sizeof(struct individual));
         newIndividual->number = i;
-        newIndividual->initialxPosition = -length/2 + (((float) rand()) / (float) RAND_MAX) * length;
-        newIndividual->initialYPosition = -width/2 + (((float) rand()) / (float) RAND_MAX) * width;
+        float randomX = (((float) rand()) / (float) RAND_MAX);
+        float randomY = (((float) rand()) / (float) RAND_MAX);
+        //printf("%f %f\n", randomX, randomY); 
+        random = abs(1 / MPI_Wtime());
+        //printf("%d\n", random); 
+        newIndividual->initialxPosition = -length/2 + (random % (int)length) + randomX;
+        random = abs(1 / MPI_Wtime());
+        //printf("%f\n", newIndividual->initialxPosition); 
+        newIndividual->initialYPosition = -width/2 + (random % (int)width) + randomY;
         newIndividual->actualXPosition = newIndividual->initialxPosition;
-        newIndividual->actualYPosition = newIndividual->actualYPosition;
-        newIndividual->directionAngle = 2 * PI / 10 * (rand() % 10);
+        newIndividual->actualYPosition = newIndividual->initialYPosition;
+        random = abs(1 / MPI_Wtime());
+        newIndividual->directionAngle = 2 * PI / 30 * (random % 30);
+        //printf("[PROCESS %d, INDIVIDUAL %d] x: %f y: %f direction: %f\n", rank, i, newIndividual->actualXPosition, newIndividual->actualYPosition, newIndividual->directionAngle);
         newIndividual->xVelocity = velocity * cos(newIndividual->directionAngle);
         newIndividual->yVelocity = velocity * sin(newIndividual->directionAngle);
         newIndividual->movement = 0;
@@ -264,8 +274,8 @@ int main(int argc, char** argv){
         localIndividuals += individuals % size;
         localInfected += infected % size;
     }
-    printf("[PROCESS %d] Number of individuals: %d\n", rank, localIndividuals);
-    printf("[PROCESS %d] Number of infected: %d\n", rank, localInfected);
+    //printf("[PROCESS %d] Number of individuals: %d\n", rank, localIndividuals);
+    //printf("[PROCESS %d] Number of infected: %d\n", rank, localInfected);
     firstIndividual = createIndividuals(localInfected, localIndividuals,rank, areaWidth, areaLength, velocity);
     MPI_Type_contiguous(maxSize, single_individual_message, &all_individuals_message);
     MPI_Type_commit(&all_individuals_message);
@@ -329,7 +339,7 @@ int main(int argc, char** argv){
 
             p->actualXPosition = p->initialxPosition + p->xVelocity * simulationSeconds * p->movement;
             p->actualYPosition = p->initialYPosition + p->yVelocity * simulationSeconds * p->movement;
-            printf("[PROCESS %d, INDIVIDUAL %d] x: %f y: %f state: %c\n", rank, p->number, p->actualXPosition, p->actualYPosition, p->state);
+            //printf("[PROCESS %d, INDIVIDUAL %d] x: %f y: %f state: %c\n", rank, p->number, p->actualXPosition, p->actualYPosition, p->state);
             struct message newMessage;
             newMessage.xCoordinate = p->actualXPosition;
             newMessage.yCoordinate = p->actualYPosition;
