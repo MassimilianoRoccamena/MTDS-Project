@@ -10,28 +10,23 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminController {
 
     @Autowired
-    ProductRepository productRepository;
+    ProductService productService;
 
-    @Autowired
-    KafkaService kafkaService;
-    
     @PostMapping("/add/{name}")
-	public Long addProduct(@PathVariable String name) {
-        if (productRepository.findByName(name).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product " + name + " already exists");
+    public Long createProduct(@PathVariable String name) {
+        try {
+            return productService.newProduct(name);
+        } catch (ProductException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
-
-        Product product = new Product(name);
-        productRepository.save(product);
-        return product.getId();
     }
-    
-    @DeleteMapping("/delete/{id}")
-	public void deleteProduct(@PathVariable Long id) {
-        if (!productRepository.findById(id).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product " + id.toString() + " not found");
-        }
 
-        productRepository.deleteById(id);
+    @DeleteMapping("/delete/{id}")
+    public void deleteProduct(@PathVariable Long id) {
+        try {
+            productService.destroyProduct(id);
+        } catch (ProductException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
 	}
 }

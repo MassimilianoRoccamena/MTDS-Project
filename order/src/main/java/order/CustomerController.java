@@ -12,37 +12,22 @@ import org.springframework.web.server.ResponseStatusException;
 public class CustomerController {
 
     @Autowired
-    CustomerRepository customerRepository;
-
-    @Autowired
-    ProductRepository productRepository;
-
-    @Autowired
     OrderRepository orderRepository;
 
     @Autowired
-    KafkaService kafkaService;
-    
+    OrderService orderService;
+
     @PostMapping("{id}/order")
-	public Long submitOrder(@PathVariable Long id, @RequestBody List<Order.Field> fields) {
-        if (!customerRepository.findById(id).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer " + id.toString() + " not found");
+    public Long createOrder(@PathVariable Long id, @RequestBody List<Order.Field> fields) {
+        try {
+            return orderService.newOrder(id, fields);
+        } catch (UserException | ProductException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
-
-        for (Order.Field field : fields) {
-            if (!productRepository.findByName(field.getName()).isPresent()) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product " + field.getName() + " not found");
-            }
-        }
-
-        Order order = new Order(id, fields);
-        orderRepository.save(order);
-        kafkaService.notifyNewOrder(order);
-        return order.getId();
     }
     
-    @GetMapping("{id}/myOrders")
-    public Iterable<Order> getMyOrders(@PathVariable Long id) {
+    @GetMapping("{id}/orders")
+    public Iterable<Order> getOrders(@PathVariable Long id) {
         return orderRepository.findAllByCustomerId(id);
     }
 }

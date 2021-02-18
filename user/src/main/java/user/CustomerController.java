@@ -10,20 +10,14 @@ import org.springframework.web.server.ResponseStatusException;
 public class CustomerController {
 
     @Autowired
-    CustomerRepository customerRepository;
+    UserService userService;
 
-    @Autowired
-    KafkaService kafkaService;
-    
     @PostMapping("/register/{name}/{address}")
-	public Long registerCustomer(@PathVariable String name, @PathVariable String address) {
-        if (customerRepository.findByName(name).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer " + name + " already exists");
+    public Long registerCustomer(@PathVariable String name, @PathVariable String address) {
+        try {
+            return userService.newCustomer(name, address);
+        } catch (UserException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
-
-        Customer customer = new Customer(name, address);
-        customerRepository.save(customer);
-        kafkaService.notifyNewCustomer(customer);
-        return customer.getId();
 	}
 }

@@ -21,21 +21,7 @@ public class KafkaProducerConfig {
     private String bootstrapAddress;
 
     @Bean
-    public ProducerFactory<String, String> producerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(
-          ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, 
-          bootstrapAddress);
-        configProps.put(
-          ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, 
-          StringSerializer.class);
-        configProps.put(
-          ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, 
-          StringSerializer.class);
-        return new DefaultKafkaProducerFactory<>(configProps);
-    }
-    /* @Bean
-    public ProducerFactory<String, String> transactionalProducerFactory() {
+    public Map<String, Object> basicProperties() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
           ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, 
@@ -48,20 +34,33 @@ public class KafkaProducerConfig {
           StringSerializer.class);
         configProps.put(
           ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,
-          "true");
-          configProps.put(
-          ProducerConfig.TRANSACTIONAL_ID_CONFIG,
-          "User");
-        return new DefaultKafkaProducerFactory<>(configProps);
-    } */
-
-    @Bean
-    public KafkaTemplate<String, String> kafkaTemplate(ProducerFactory<String, String> producerFactory) {
-        return new KafkaTemplate<>(producerFactory);
+          true);
+        return configProps;
     }
 
-    /* @Bean
-    public KafkaTemplate<String, String> transactionalkafkaTemplate(ProducerFactory<String, String> transactionalProducerFactory) {
-        return new KafkaTemplate<>(transactionalProducerFactory);
-    } */
+    @Bean
+    public ProducerFactory<String, String> newCustomeryManProducerFactory(Map<String, Object> basicProperties) {
+        Map<String, Object> configProps = new HashMap<>(basicProperties);
+        configProps.put(
+          ProducerConfig.TRANSACTIONAL_ID_CONFIG,
+          "NewCustomerMan");
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+    @Bean
+    public ProducerFactory<String, String> newDeliveryManProducerFactory(Map<String, Object> basicProperties) {
+        Map<String, Object> configProps = new HashMap<>(basicProperties);
+        configProps.put(
+          ProducerConfig.TRANSACTIONAL_ID_CONFIG,
+          "NewDeliveryMan");
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<String, String> newCustomerKafkaTemplate(ProducerFactory<String, String> newCustomerProducerFactory) {
+        return new KafkaTemplate<>(newCustomerProducerFactory);
+    }
+    @Bean
+    public KafkaTemplate<String, String> newDeliveryManKafkaTemplate(ProducerFactory<String, String> newDeliveryManProducerFactory) {
+        return new KafkaTemplate<>(newDeliveryManProducerFactory);
+    }
 }

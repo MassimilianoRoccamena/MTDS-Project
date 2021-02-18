@@ -10,20 +10,14 @@ import org.springframework.web.server.ResponseStatusException;
 public class DeliveryManController {
 
     @Autowired
-    DeliveryManRepository deliveryManRepository;
+    UserService userService;
 
-    @Autowired
-    KafkaService kafkaService;
-    
     @PostMapping("/register/{name}")
-	public Long registerDeliveryMan(@PathVariable String name) {
-        if (deliveryManRepository.findByName(name).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery man " + name + " already exists");
+    public Long registerDeliveryMan(@PathVariable String name) {
+        try {
+            return userService.newDeliveryMan(name);
+        } catch (UserException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
-
-        DeliveryMan deliveryMan = new DeliveryMan(name);
-        deliveryManRepository.save(deliveryMan);
-        kafkaService.notifyNewDeliveryMan(deliveryMan);
-        return deliveryMan.getId();
 	}
 }
