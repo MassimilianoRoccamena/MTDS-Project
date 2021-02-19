@@ -15,17 +15,16 @@ public class UserService {
     DeliveryManRepository deliveryManRepository;
 
     @KafkaListener(topics = "NewDeliveryMan")
-    public void onNewDeliveryMan(String message) throws UserException {
+    public void onNewDeliveryMan(String message) {
 
         // If (delivery man exists):  exception
         // Else:                      save customer
         Long userId = Long.parseLong(message);
         log.info("Received delivery man " + userId.toString());
         if (deliveryManRepository.findById(userId).isPresent()) {
-            throw new UserException("Customer " + userId.toString() + " already exists");
+            log.error("Customer " + userId.toString() + " already exists");
         }
 
-        
         DeliveryMan deliveryMan = new DeliveryMan(userId);
         deliveryManRepository.save(deliveryMan);
     }

@@ -17,7 +17,7 @@ public class DeliveryManController {
         try {
             return userService.newDeliveryMan(name);
         } catch (UserException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
 	}
 }

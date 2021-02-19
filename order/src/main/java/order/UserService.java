@@ -15,7 +15,7 @@ public class UserService {
     CustomerRepository customerRepository;
 
     @KafkaListener(topics = "NewCustomer")
-    public void onNewCustomer(String message) throws UserException {
+    public void onNewCustomer(String message) {
 
         // If (customer exists):  exception
         // Else:                  save customer
@@ -24,7 +24,7 @@ public class UserService {
         Long userId = Long.parseLong(splittedMessage[0]);
         log.info("Received customer " + userId.toString());
         if (customerRepository.findById(userId).isPresent()) {
-            throw new UserException("Customer " + userId.toString() + " already exists");
+            log.error("Customer " + userId.toString() + " already exists");
         }
 
         String customerAddress = splittedMessage[1];

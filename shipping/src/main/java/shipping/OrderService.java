@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -26,7 +25,7 @@ public class OrderService {
     KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "NewOrder")
-    public void onNewOrder(String message) throws OrderException {
+    public void onNewOrder(String message) {
 
         // If (order exists):  exception
         // Else:               save order assigned to delivery man
@@ -34,7 +33,7 @@ public class OrderService {
         Long orderId = Long.parseLong(splittedMessage[0]);
         log.info("Received order " + orderId.toString());
         if (orderRepository.findById(orderId).isPresent()) {
-            throw new OrderException("Order " + orderId.toString() + " already exists", HttpStatus.BAD_REQUEST);
+            log.error("Order " + orderId.toString() + " already exists", HttpStatus.BAD_REQUEST);
         }
 
         String customerAddress = splittedMessage[1];
@@ -44,7 +43,6 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    @Transactional
     public void deliverOrder(Long userId, Long orderId) throws UserException, OrderException {
 
         // If (delivery man or order not found or invalid order or delivery man):   exception

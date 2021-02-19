@@ -20,9 +20,9 @@ public class DeliveryManController {
         try {
             orderService.deliverOrder(userId, orderId);
         } catch (UserException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (OrderException e) {
-            throw new ResponseStatusException(e.getHttpStatus(), e.getMessage(), e);
+            throw new ResponseStatusException(e.getHttpStatus(), e.getMessage());
         }
     }
 

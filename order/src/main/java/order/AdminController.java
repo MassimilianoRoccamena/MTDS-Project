@@ -17,7 +17,7 @@ public class AdminController {
         try {
             return productService.newProduct(name);
         } catch (ProductException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -26,7 +26,7 @@ public class AdminController {
         try {
             productService.destroyProduct(id);
         } catch (ProductException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
 	}
 }

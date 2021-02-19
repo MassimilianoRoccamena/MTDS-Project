@@ -32,35 +32,20 @@ public class KafkaProducerConfig {
         configProps.put(
           ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, 
           StringSerializer.class);
-        configProps.put(
-          ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,
-          true);
         return configProps;
     }
 
     @Bean
-    public ProducerFactory<String, String> newCustomerProducerFactory() {
-        Map<String, Object> configProps = new HashMap<>(basicProperties());
+    public ProducerFactory<String, String> producerFactory(Map<String, Object> basicProperties) {
+        Map<String, Object> configProps = new HashMap<>(basicProperties);
         configProps.put(
           ProducerConfig.TRANSACTIONAL_ID_CONFIG,
-          "NewCustomerMan");
-        return new DefaultKafkaProducerFactory<>(configProps);
-    }
-    @Bean
-    public ProducerFactory<String, String> newDeliveryManProducerFactory() {
-        Map<String, Object> configProps = new HashMap<>(basicProperties());
-        configProps.put(
-          ProducerConfig.TRANSACTIONAL_ID_CONFIG,
-          "NewDeliveryMan");
+          "NewCustomer");
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
-    @Bean(name="newCustomerKafkaTemplate")
-    public KafkaTemplate<String, String> newCustomerKafkaTemplate() {
-        return new KafkaTemplate<>(newCustomerProducerFactory());
-    }
-    @Bean(name="newDeliveryManKafkaTemplate")
-    public KafkaTemplate<String, String> newDeliveryManKafkaTemplate() {
-        return new KafkaTemplate<>(newDeliveryManProducerFactory());
+    @Bean
+    public KafkaTemplate<String, String> kafkaTemplate(ProducerFactory<String, String> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
     }
 }

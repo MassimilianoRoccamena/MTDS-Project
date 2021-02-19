@@ -17,7 +17,7 @@ public class CustomerController {
         try {
             return userService.newCustomer(name, address);
         } catch (UserException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
 	}
 }

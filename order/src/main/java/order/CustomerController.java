@@ -22,7 +22,7 @@ public class CustomerController {
         try {
             return orderService.newOrder(id, fields);
         } catch (UserException | ProductException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
     

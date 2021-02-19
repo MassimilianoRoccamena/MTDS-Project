@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -25,7 +24,6 @@ public class OrderService {
     @Autowired
     KafkaTemplate<String, String> kafkaTemplate;
 
-    @Transactional
     public Long newOrder(Long userId, List<Order.Field> fields) throws UserException, ProductException {
 
         // If (customer or product not found):  exception
@@ -50,14 +48,14 @@ public class OrderService {
     }
 
     @KafkaListener(topics = "OrderDelivered")
-    public void onOrderDelivered(String message) throws OrderException {
+    public void onOrderDelivered(String message) {
 
         // If (order not found):  exception
         // Else:                  update order
         Long orderId = Long.parseLong(message);
         log.info("Received delivery of order " + orderId.toString());
         if (!orderRepository.findById(orderId).isPresent()) {
-            throw new OrderException("Order " + orderId.toString() + " not found");
+            log.error("Order " + orderId.toString() + " not found");
         }
 
         Order order = orderRepository.findById(orderId).get();
