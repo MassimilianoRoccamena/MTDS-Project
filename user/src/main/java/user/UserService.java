@@ -1,6 +1,7 @@
 package user;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +19,10 @@ public class UserService {
     DeliveryManRepository deliveryManRepository;
 
     @Autowired
+    @Qualifier("newCustomerKafkaTemplate")
     KafkaTemplate<String, String> newCustomerKafkaTemplate;
     @Autowired
+    @Qualifier("newDeliveryManKafkaTemplate")
     KafkaTemplate<String, String> newDeliveryManKafkaTemplate;
 
     @Transactional

@@ -39,28 +39,28 @@ public class KafkaProducerConfig {
     }
 
     @Bean
-    public ProducerFactory<String, String> newCustomeryManProducerFactory(Map<String, Object> basicProperties) {
-        Map<String, Object> configProps = new HashMap<>(basicProperties);
+    public ProducerFactory<String, String> newCustomerProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>(basicProperties());
         configProps.put(
           ProducerConfig.TRANSACTIONAL_ID_CONFIG,
           "NewCustomerMan");
         return new DefaultKafkaProducerFactory<>(configProps);
     }
     @Bean
-    public ProducerFactory<String, String> newDeliveryManProducerFactory(Map<String, Object> basicProperties) {
-        Map<String, Object> configProps = new HashMap<>(basicProperties);
+    public ProducerFactory<String, String> newDeliveryManProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>(basicProperties());
         configProps.put(
           ProducerConfig.TRANSACTIONAL_ID_CONFIG,
           "NewDeliveryMan");
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
-    @Bean
-    public KafkaTemplate<String, String> newCustomerKafkaTemplate(ProducerFactory<String, String> newCustomerProducerFactory) {
-        return new KafkaTemplate<>(newCustomerProducerFactory);
+    @Bean(name="newCustomerKafkaTemplate")
+    public KafkaTemplate<String, String> newCustomerKafkaTemplate() {
+        return new KafkaTemplate<>(newCustomerProducerFactory());
     }
-    @Bean
-    public KafkaTemplate<String, String> newDeliveryManKafkaTemplate(ProducerFactory<String, String> newDeliveryManProducerFactory) {
-        return new KafkaTemplate<>(newDeliveryManProducerFactory);
+    @Bean(name="newDeliveryManKafkaTemplate")
+    public KafkaTemplate<String, String> newDeliveryManKafkaTemplate() {
+        return new KafkaTemplate<>(newDeliveryManProducerFactory());
     }
 }
