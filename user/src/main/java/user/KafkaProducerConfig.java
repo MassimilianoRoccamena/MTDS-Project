@@ -21,7 +21,7 @@ public class KafkaProducerConfig {
     private String bootstrapAddress;
 
     @Bean
-    public Map<String, Object> basicProperties() {
+    public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
           ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, 
@@ -32,15 +32,9 @@ public class KafkaProducerConfig {
         configProps.put(
           ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, 
           StringSerializer.class);
-        return configProps;
-    }
-
-    @Bean
-    public ProducerFactory<String, String> producerFactory(Map<String, Object> basicProperties) {
-        Map<String, Object> configProps = new HashMap<>(basicProperties);
         configProps.put(
-          ProducerConfig.TRANSACTIONAL_ID_CONFIG,
-          "NewCustomer");
+          ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,
+          true);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
