@@ -34,6 +34,7 @@ public class OrderService {
         log.info("Received order " + orderId.toString());
         if (orderRepository.findById(orderId).isPresent()) {
             log.error("Order " + orderId.toString() + " already exists", HttpStatus.BAD_REQUEST);
+            return;
         }
 
         String customerAddress = splittedMessage[1];

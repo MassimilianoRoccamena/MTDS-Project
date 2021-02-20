@@ -23,6 +23,7 @@ public class UserService {
         log.info("Received delivery man " + userId.toString());
         if (deliveryManRepository.findById(userId).isPresent()) {
             log.error("Customer " + userId.toString() + " already exists");
+            return;
         }
 
         DeliveryMan deliveryMan = new DeliveryMan(userId);

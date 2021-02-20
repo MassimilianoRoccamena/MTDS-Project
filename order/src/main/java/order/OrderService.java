@@ -56,6 +56,7 @@ public class OrderService {
         log.info("Received delivery of order " + orderId.toString());
         if (!orderRepository.findById(orderId).isPresent()) {
             log.error("Order " + orderId.toString() + " not found");
+            return;
         }
 
         Order order = orderRepository.findById(orderId).get();

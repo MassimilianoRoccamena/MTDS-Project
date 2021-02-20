@@ -25,6 +25,7 @@ public class UserService {
         log.info("Received customer " + userId.toString());
         if (customerRepository.findById(userId).isPresent()) {
             log.error("Customer " + userId.toString() + " already exists");
+            return;
         }
 
         String customerAddress = splittedMessage[1];
