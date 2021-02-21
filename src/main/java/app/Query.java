@@ -54,7 +54,7 @@ public class Query
         // Q1
         WindowSpec window = Window.partitionBy("country")
                                             .orderBy("day")
-                                            .rangeBetween(-2, 0);
+                                            .rowsBetween(-3+1, 0);
 
         df = df.withColumn("Q1", 
                                 avg("cases").over(window));
@@ -74,7 +74,7 @@ public class Query
                                      when(df.col("lagged").isNull(), df.col("Q1")).otherwise(df.col("lagged")));  // Replace nulls with not lagged
 
         df = df.withColumn("Q2",
-                                    expr("cases/lagged"));
+                                    expr("Q1/lagged"));
 
         df = df.drop("lagged");
 
