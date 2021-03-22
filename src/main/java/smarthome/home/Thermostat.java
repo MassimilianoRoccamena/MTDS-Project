@@ -33,7 +33,7 @@ public class Thermostat extends Appliance{
 
     @Override
     public void activate(ActivateMessage message) {
-        sender().tell(new ResponseMessage(false, "[LOG] Thermostat connected and activated"), self());
+        sender().tell(new ResponseMessage(false, "Thermostat connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Thermostat";
         this.functionWithTimer = false;

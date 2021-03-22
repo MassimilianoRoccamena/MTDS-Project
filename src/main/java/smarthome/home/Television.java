@@ -10,7 +10,7 @@ public class Television extends Appliance{
     @Override
     public void activate(ActivateMessage message) {
         this.server = getContext().getParent();
-        server.tell(new ResponseMessage(false, "[LOG] Television connected and activated"), self());
+        server.tell(new ResponseMessage(false, "Television connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Television";
         this.isOn = false;

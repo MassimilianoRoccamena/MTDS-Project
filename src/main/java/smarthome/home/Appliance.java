@@ -77,10 +77,10 @@ public abstract class Appliance extends AbstractActor {
 
     //Functions to override
     public void notifyStop(boolean timer, ActorRef sender){
-        sender.tell(new ResponseMessage(timer, "[LOG] " + this.name + " has stopped its execution!"), self());
+        sender.tell(new ResponseMessage(timer, this.name + " has stopped its execution!"), self());
     }
     public void notifyStart(boolean timer){
-        sender().tell(new ResponseMessage(timer, "[LOG] "+ this.name + " has started working!"),self());
+        sender().tell(new ResponseMessage(timer, this.name + " has started working!"),self());
 
     }
     public void notifyChangeTemperature(ActorRef sender){}
@@ -91,13 +91,13 @@ public abstract class Appliance extends AbstractActor {
         if(functioningProcess != null){
             functioningProcess.cancel();
         }
-        System.out.println("[LOG] " + this.name + " is being restarted");
+        System.out.println(this.name + " is being restarted");
     }
 
     @Override
     public void postRestart(Throwable reason){
         activate(new ActivateMessage());
-        System.out.println("[LOG] "+ this.name + " has been restarted");
+        System.out.println(this.name + " has been restarted");
     }
 
 

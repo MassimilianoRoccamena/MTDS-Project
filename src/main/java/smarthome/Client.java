@@ -23,7 +23,7 @@ public class Client extends AbstractActor {
     }
 
     private void initializeCli(ActivateMessage message){
-        this.server = context().actorSelection("akka.tcp://Server@127.0.0.1:2552/user/controlPanel");
+        this.server = context().actorSelection("akka.tcp://Server@127.0.0.1:2552/user/backend/controlPanel");
         System.out.println("-----------WELCOME TO THE SMART HOUSE INTERFACE-----------------\n");
         server.tell(new RequestMessage(MessageType.MACHINELIST, null), self());
     }

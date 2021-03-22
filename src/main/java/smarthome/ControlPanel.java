@@ -1,22 +1,11 @@
 package smarthome;
 
-import smarthome.home.AirConditioning;
 import akka.actor.*;
 import akka.japi.pf.DeciderBuilder;
-
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-
-import java.io.File;
-
-import smarthome.home.Television;
-import smarthome.home.Thermostat;
-import smarthome.home.WashingMachine;
 import smarthome.messages.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -24,6 +13,7 @@ import static akka.pattern.Patterns.ask;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ControlPanel extends AbstractActor{
+    private final ActorRef backend = getContext().getParent();
     private final Map<String, ActorRef> appliances = new HashMap<>();
     private float desiredTemperature = 20;
     private final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
@@ -32,7 +22,7 @@ public class ControlPanel extends AbstractActor{
                     timeout,
                     true,
                     DeciderBuilder
-                            .match(Exception.class, e -> (SupervisorStrategy.Directive) SupervisorStrategy.restart())
+                            .match(Exception.class, e -> (SupervisorStrategy.Directive) SupervisorStrategy.escalate())
                             .build()
                     );
     @Override
@@ -47,7 +37,6 @@ public class ControlPanel extends AbstractActor{
     public SupervisorStrategy supervisorStrategy() {
         return strategy;
     }
-
 
     //Function that handles the requests coming from the client
     private void onRequest(RequestMessage message) {
@@ -80,7 +69,7 @@ public class ControlPanel extends AbstractActor{
             scala.concurrent.Future<Object> waitingForAppliance = ask(thermostat, new RequestMessage(MessageType.GETTEMPERATURE, null), 5000);
             return (Float) waitingForAppliance.result(timeout, null);
         }catch (Exception e){
-            System.out.println("[ERROR] Problem encountered with getting the temperature!");
+            backend.tell(new ResponseMessage(true, "Problem encountered with getting the temperature!"), self());
             return 0.0f;
         }
 
@@ -100,7 +89,7 @@ public class ControlPanel extends AbstractActor{
             String result =(String) waitingForState.result(timeout, null);
             conflict = !result.equals("OFF");
         }catch (Exception e){
-            System.out.println("[ERROR] Could not find if there is a conflict between appliances");
+            backend.tell(new ResponseMessage(true, "Could not find if there is a conflict between appliances"), self());
             return true;
         }
         return conflict;
@@ -125,9 +114,9 @@ public class ControlPanel extends AbstractActor{
                 ActorRef thermostat = this.appliances.get("Thermostat");
                 thermostat.tell(new RequestMessage(MessageType.CHANGETEMPERATURE, message.getMessage()),self());
             }
-            System.out.println("The temperature is now " + actualTemperature + "°C");
+            backend.tell(new ResponseMessage(false, "The temperature is now " + actualTemperature + "°C"), self());
         }else {
-            System.out.println(message.getMessage());
+            backend.tell(new ResponseMessage(message.isArg(), message.getMessage()), self());
         }
     }
 
@@ -192,7 +181,7 @@ public class ControlPanel extends AbstractActor{
             }
         }
         response += getAppliancesList().getMessage();
-        System.out.println(response);
+        backend.tell(new ResponseMessage(error, response), self());
         return new ResponseMessage(error, response);
     }
     private ResponseMessage changeTemperature(String newTemperature){
@@ -212,20 +201,7 @@ public class ControlPanel extends AbstractActor{
     }
 
 
-
     static Props props() {
         return Props.create(ControlPanel.class);
-    }
-
-    public static void main(String[] args) {
-        Config conf =
-                ConfigFactory.parseFile(new File("config/server.conf"));
-        ActorSystem sys = ActorSystem.create("Server", conf);
-        ActorRef supervisor = sys.actorOf(ControlPanel.props(), "controlPanel");
-        System.out.println("[LOG] The control panel is functional");
-        supervisor.tell(new CreateActorMessage(AirConditioning.props(), "AirConditioning"), ActorRef.noSender());
-        supervisor.tell(new CreateActorMessage(Thermostat.props(), "Thermostat"), ActorRef.noSender());
-        supervisor.tell(new CreateActorMessage(WashingMachine.props(), "WashingMachine"), ActorRef.noSender());
-        supervisor.tell(new CreateActorMessage(Television.props(), "Television"), ActorRef.noSender());
     }
 }

@@ -8,7 +8,7 @@ public class WashingMachine extends Appliance{
     @Override
     public void activate(ActivateMessage message) {
         this.server = getContext().getParent();
-        server.tell(new ResponseMessage(false, "[LOG] Washing Machine connected and activated"), self());
+        server.tell(new ResponseMessage(false, "Washing Machine connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Washing Machine";
         this.isOn = false;
