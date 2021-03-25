@@ -15,11 +15,11 @@
 
 /*===========================================================================*/
 
-#define UIP_CONF_TCP 				1
+//#define UIP_CONF_TCP 				1
 #define MAX_TCP_SEGMENT_SIZE    		32
-#define IEEE802154_CONF_DEFAULT_CHANNEL      	21
+//#define IEEE802154_CONF_DEFAULT_CHANNEL      	21
 /*---------------------------------------------------------------------------*/
-#define BROKER_IP_ADDR		   	"fd00::1";
+#define BROKER_IP_ADDR		   	"fd00::1"
 #define DEFAULT_ORG_ID             	"contacts-org"
 #define BROADCAST_PORT 		   	1234
 /*---------------------------------------------------------------------------*/
@@ -89,9 +89,7 @@ static char my_id[BUFFER_SIZE];
 static char other_id[BUFFER_SIZE];
 static char pub_topic[BUFFER_SIZE];
 static char sub_topic[BUFFER_SIZE];
-/*---------------------------------------------------------------------------*/
 static char app_buffer[APP_BUFFER_SIZE];
-static char *buf_ptr;
 /*---------------------------------------------------------------------------*/
 static struct timer connection_life;
 static uint8_t connect_attempt;
@@ -114,7 +112,7 @@ static void on_broker_event(struct mqtt_connection *m, mqtt_event_t event, void 
     break;
   }
   case MQTT_EVENT_PUBLISH: {						// <=== Consumer handler
-    LOG_INFO("EVENT OF INTEREST RECEIVED! DANGER!\n")
+    LOG_INFO("EVENT OF INTEREST RECEIVED! DANGER!\n");
     break;
   }
   case MQTT_EVENT_SUBACK: {
@@ -166,6 +164,7 @@ static int build_my_id(void)
     LOG_INFO("Client ID: %d, buffer %d\n", len, BUFFER_SIZE);
     return 0;
   }
+  memcpy(app_buffer, my_id, BUFFER_SIZE);
   return 1;
 }
 /*---------------------------------------------------------------------------*/
@@ -214,24 +213,7 @@ static void subscribe(void)
 /*---------------------------------------------------------------------------*/
 static void publish(void)
 {
-  int len;
-  int remaining = APP_BUFFER_SIZE;
-
-  buf_ptr = app_buffer;
-
-  len = snprintf(buf_ptr, remaining, my_id);
-  if(len < 0 || len >= remaining) {
-    LOG_ERR("Buffer too short for my id. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
-  remaining -= len;
-  buf_ptr += len;
-
-  len = snprintf(buf_ptr, remaining, other_id);
-  if(len < 0 || len >= remaining) {
-    LOG_ERR("Buffer too short for my. Have %d, need %d + \\0\n", remaining, len);
-    return;
-  }
+  memcpy(app_buffer+sizeof(char)*BUFFER_SIZE, other_id, BUFFER_SIZE);
 
   mqtt_publish(&broker_connection, NULL,
 		pub_topic, (uint8_t *)app_buffer,
@@ -252,9 +234,9 @@ static void update_broker_process(void)
   case STATE_INIT:
     mqtt_register(&broker_connection, &broker_process, my_id, on_broker_event, MAX_TCP_SEGMENT_SIZE);
 
-    mqtt_set_username_password(&conn, "use-token-auth", conf.auth_token);
+    mqtt_set_username_password(&broker_connection, "use-token-auth", conf.auth_token);
 
-    conn.auto_reconnect = 0;
+    broker_connection.auto_reconnect = 0;
     connect_attempt = 1;
 
     state = STATE_REGISTERED;
@@ -290,8 +272,9 @@ static void update_broker_process(void)
 
       LOG_INFO("Publishing\n");
       return;
+    }
     else {
-      LOG_INFO("Publishing... (MQTT state=%d, q=%u)\n", conn.state, conn.out_queue_full);
+      LOG_INFO("Publishing... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
     }
     break;
 
@@ -299,11 +282,11 @@ static void update_broker_process(void)
     LOG_INFO("Disconnected\n");
     if(connect_attempt < RECONNECT_ATTEMPTS || RECONNECT_ATTEMPTS == RETRY_FOREVER) {
       clock_time_t interval;
-      mqtt_disconnect(&conn);
+      mqtt_disconnect(&broker_connection);
       connect_attempt++;
 
       interval = connect_attempt < 3 ? 	RECONNECT_INTERVAL << connect_attempt
-					: ECONNECT_INTERVAL << 3;
+					: RECONNECT_INTERVAL << 3;
 
       LOG_INFO("Disconnected: attempt %u in %lu ticks\n", connect_attempt, interval);
 
@@ -331,7 +314,7 @@ static void update_broker_process(void)
   etimer_set(&broker_process_timer, BROKER_PROCESS_T);
 }
 /*---------------------------------------------------------------------------*/
-static void on_contact(struct simple_udp_connection *c,
+static void on_broadcast_receive(struct simple_udp_connection *c,
          			const uip_ipaddr_t *sender_addr,
          			uint16_t sender_port,
          			const uip_ipaddr_t *receiver_addr,
@@ -341,9 +324,9 @@ static void on_contact(struct simple_udp_connection *c,
   
   LOG_INFO("Detected contact with ");
   LOG_INFO_6ADDR(sender_addr);
-  LOG_INFO_("\n");
+  LOG_INFO("\n");
 
-  memcpy(other_id, data, datalen)
+  memcpy(other_id, data, datalen);
 }
 
 /*===========================================================================*/
@@ -352,7 +335,7 @@ PROCESS_THREAD(broker_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  LOG_INFO("Started broker process")
+  LOG_INFO("Started broker process");
 
   init_config();
   update_config();
@@ -377,9 +360,9 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
   PROCESS_BEGIN();
 
-  LOG_INFO("Started broker process")
+  LOG_INFO("Started broker process");
   
-  simple_udp_register(&broadcast_connection, BROADCAST_PORT, NULL, BROADCAST_PORT, on_contact);
+  simple_udp_register(&broadcast_connection, BROADCAST_PORT, NULL, BROADCAST_PORT, on_broadcast_receive);
   etimer_set(&broadcast_process_timer, BROADCAST_PROCESS_T);
 
   while(1) {
