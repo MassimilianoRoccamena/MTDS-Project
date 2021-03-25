@@ -3,11 +3,12 @@
 #include "sys/log.h"
 #define LOG_MODULE "RPL BR"
 #define LOG_LEVEL LOG_LEVEL_INFO
+
+PROCESS(contiki_ng_br, "Contiki-NG Border Router");
+AUTOSTART_PROCESSES(&contiki_ng_br);
+
 /*---------------------------------------------------------------------------*/
-PROCESS(border_router_process, "RPL Border Router");
-AUTOSTART_PROCESSES(&border_router_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(border_router_process, ev, data)
+PROCESS_THREAD(contiki_ng_br, ev, data)
 {
   PROCESS_BEGIN();
 
