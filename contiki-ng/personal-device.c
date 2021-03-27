@@ -15,9 +15,9 @@
 
 /*===========================================================================*/
 
-#define MAX_TCP_SEGMENT_SIZE    		32
+#define MAX_TCP_SEGMENT_SIZE    	32
 /*---------------------------------------------------------------------------*/
-#define DEFAULT_ORG_ID             	"contacts-org"
+#define BROKER_PORT         		1883
 #define BROADCAST_PORT 		   	1234
 /*---------------------------------------------------------------------------*/
 #define RETRY_FOREVER              0xFF
@@ -36,25 +36,22 @@
 #define STATE_CONFIG_ERROR    0xFE
 #define STATE_ERROR           0xFF
 /*---------------------------------------------------------------------------*/
-#define CONFIG_ORG_ID_LEN        32
-#define CONFIG_TYPE_ID_LEN       32
-#define CONFIG_AUTH_TOKEN_LEN    32
-#define CONFIG_CMD_TYPE_LEN      8
-#define CONFIG_IP_ADDR_STR_LEN   64
+#define CONFIG_AUTH_TOKEN_LEN    	32
+#define CONFIG_CMD_TYPE_LEN      	8
+#define CONFIG_IP_ADDR_STR_LEN  	64
 /*---------------------------------------------------------------------------*/
-#define DEFAULT_TYPE_ID             "native"
-#define DEFAULT_AUTH_TOKEN          "AUTHZ"
-#define DEFAULT_SUBSCRIBE_CMD_TYPE  "+"
-#define DEFAULT_BROKER_PORT         1883
+#define DEFAULT_AUTH_TOKEN          	"AUTHZ"
+#define DEFAULT_SUBSCRIBE_CMD_TYPE  	"+"
 /*---------------------------------------------------------------------------*/
-#define BROKER_PROCESS_T            (CLOCK_SECOND * 1)
+#define BROKER_PROCESS_T            (CLOCK_SECOND * 2)
 #define BROADCAST_PROCESS_T         (CLOCK_SECOND * 1)
 /*---------------------------------------------------------------------------*/
-#define PUB_TOPIC   		"iot/contact/produce"
-#define SUB_TOPIC       	"iot/event/consume"
+#define CONTACT_PUB_TOPIC   	"iot/contact/produce"
+#define EVENT_PUB_TOPIC   	"iot/event/produce"
+#define EVENT_SUB_TOPIC       	"iot/event/consume"
 /*---------------------------------------------------------------------------*/
-#define BUFFER_SIZE 64
-#define APP_BUFFER_SIZE 128
+#define SHORT_SIZE 		150
+#define LONG_SIZE 		300
 
 /*===========================================================================*/
 
@@ -65,8 +62,6 @@ AUTOSTART_PROCESSES(&broker_process, &broadcast_process);
 /*===========================================================================*/
 
 typedef struct mqtt_client_config {
-  char org_id[CONFIG_ORG_ID_LEN];
-  char type_id[CONFIG_TYPE_ID_LEN];
   char auth_token[CONFIG_AUTH_TOKEN_LEN];
   char broker_ip[CONFIG_IP_ADDR_STR_LEN];
   char cmd_type[CONFIG_CMD_TYPE_LEN];
@@ -84,14 +79,26 @@ static struct etimer broadcast_process_timer;
 /*---------------------------------------------------------------------------*/
 static uint8_t state;
 /*---------------------------------------------------------------------------*/
-static char my_id[BUFFER_SIZE];
-static char other_id[BUFFER_SIZE];
-static uint8_t other_flush = 0;
-static char pub_topic[BUFFER_SIZE];
-static char sub_topic[BUFFER_SIZE];
-static char app_buffer[APP_BUFFER_SIZE];
+static char contact_pub_topic[SHORT_SIZE];
+static char event_pub_topic[SHORT_SIZE];
+static char event_sub_topic[SHORT_SIZE];
 /*---------------------------------------------------------------------------*/
-static void on_broker_event(struct mqtt_connection *m, mqtt_event_t event, void *data)
+static char my_id[SHORT_SIZE];
+static char other_id[SHORT_SIZE];
+static uint8_t other_flush = 0;
+static char contact_msg[LONG_SIZE];
+static char event_msg[SHORT_SIZE];
+static uint8_t signal_event = 0;
+
+/*===========================================================================*/
+
+static void on_event_of_interest(void)
+{
+  LOG_INFO("Event of interest received\n");
+  //LED
+}
+
+static void mqtt_receiver(struct mqtt_connection *m, mqtt_event_t event, void *data)
 {
   switch(event) {
   case MQTT_EVENT_CONNECTED: {
@@ -108,7 +115,7 @@ static void on_broker_event(struct mqtt_connection *m, mqtt_event_t event, void 
   }
   case MQTT_EVENT_PUBLISH: {
     LOG_INFO("MQTT: message received\n");   
-    LOG_INFO("EVENT OF INTEREST RECEIVED! DANGER!\n");	// <=== Consumer handler
+    on_event_of_interest();
     break;
   }
   case MQTT_EVENT_SUBACK: {
@@ -124,46 +131,61 @@ static void on_broker_event(struct mqtt_connection *m, mqtt_event_t event, void 
     break;
   }
   default:
-    LOG_WARN("MQTT: unhandled broker event %i\n", event);
+    LOG_WARN("MQTT: unhandled event %i\n", event);
     break;
   }
 }
 /*---------------------------------------------------------------------------*/
-static int build_pub_topic(void)
-{
-  int len = snprintf(pub_topic, BUFFER_SIZE, PUB_TOPIC);
-  if(len < 0 || len >= BUFFER_SIZE) {
-    LOG_ERR("Pub topic: %d, buffer %d\n", len, BUFFER_SIZE);
-    return 0;
-  }
-  return 1;
-}
-/*---------------------------------------------------------------------------*/
-static int build_sub_topic(void)
-{
-  int len = snprintf(sub_topic, BUFFER_SIZE, SUB_TOPIC);
-  if(len < 0 || len >= BUFFER_SIZE) {
-    LOG_INFO("Sub topic: %d, buffer %d\n", len, BUFFER_SIZE);
-    return 0;
-  }
-  return 1;
-}
-/*---------------------------------------------------------------------------*/
 static int build_my_id(void)
 {
-  int len = snprintf(my_id, BUFFER_SIZE, "d:%s:%s:%02x%02x%02x%02x%02x%02x",
-                     conf.org_id, conf.type_id,
+  int len = snprintf(my_id, SHORT_SIZE, "%02x%02x%02x%02x%02x%02x",
                      linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                      linkaddr_node_addr.u8[2], linkaddr_node_addr.u8[5],
                      linkaddr_node_addr.u8[6], linkaddr_node_addr.u8[7]);
-  if(len < 0 || len >= BUFFER_SIZE) {
-    LOG_INFO("Client ID: %d, buffer %d\n", len, BUFFER_SIZE);
+  if(len < 0 || len >= SHORT_SIZE) {
+    LOG_ERR("Client ID: %d, buffer %d\n", len, SHORT_SIZE);
     return 0;
   }
-  memcpy(app_buffer, my_id, len);
+  LOG_INFO("My ID is %s\n", my_id);
+  return 1;
+}
+
+static int build_sub_topic(void)
+{
+  int len = snprintf(event_sub_topic, SHORT_SIZE, EVENT_SUB_TOPIC);
+  if(len < 0 || len >= SHORT_SIZE) {
+    LOG_ERR("Sub topic: %d, buffer %d\n", len, SHORT_SIZE);
+    return 0;
+  }
+  strcat(event_sub_topic, "/");
+  strcat(event_sub_topic, my_id);
+  return 1;
+}
+
+static int build_pub_topics(void)
+{
+  int len = snprintf(contact_pub_topic, SHORT_SIZE, CONTACT_PUB_TOPIC);
+  if(len < 0 || len >= SHORT_SIZE) {
+    LOG_ERR("Pub topic: %d, buffer %d\n", len, SHORT_SIZE);
+    return 0;
+  }
+  len = snprintf(event_pub_topic, SHORT_SIZE, EVENT_PUB_TOPIC);
+  if(len < 0 || len >= SHORT_SIZE) {
+    LOG_ERR("Pub topic: %d, buffer %d\n", len, SHORT_SIZE);
+    return 0;
+  }
   return 1;
 }
 /*---------------------------------------------------------------------------*/
+static void init_config(void)
+{
+  memset(&conf, 0, sizeof(mqtt_client_config_t));
+  memcpy(conf.auth_token, DEFAULT_AUTH_TOKEN, strlen(DEFAULT_AUTH_TOKEN));
+  memcpy(conf.broker_ip, BROKER_IP_ADDR, strlen(BROKER_IP_ADDR));
+  memcpy(conf.cmd_type, DEFAULT_SUBSCRIBE_CMD_TYPE, 1);
+  conf.broker_port = BROKER_PORT;
+}
+
 static void update_config(void)
 {
   if(build_my_id() == 0) {
@@ -174,7 +196,7 @@ static void update_config(void)
     state = STATE_CONFIG_ERROR;
     return;
   }
-  if(build_pub_topic() == 0) {
+  if(build_pub_topics() == 0) {
     state = STATE_CONFIG_ERROR;
     return;
   }
@@ -183,55 +205,56 @@ static void update_config(void)
   return;
 }
 /*---------------------------------------------------------------------------*/
-static void init_config()
-{
-  memset(&conf, 0, sizeof(mqtt_client_config_t));
-  memcpy(conf.org_id, DEFAULT_ORG_ID, strlen(DEFAULT_ORG_ID));
-  memcpy(conf.type_id, DEFAULT_TYPE_ID, strlen(DEFAULT_TYPE_ID));
-  memcpy(conf.auth_token, DEFAULT_AUTH_TOKEN, strlen(DEFAULT_AUTH_TOKEN));
-  memcpy(conf.broker_ip, BROKER_IP_ADDR, strlen(BROKER_IP_ADDR));
-  memcpy(conf.cmd_type, DEFAULT_SUBSCRIBE_CMD_TYPE, 1);
-  conf.broker_port = DEFAULT_BROKER_PORT;
-}
-/*---------------------------------------------------------------------------*/
 static void subscribe(void)
 {
   mqtt_status_t status;
 
-  status = mqtt_subscribe(&broker_connection, NULL, sub_topic, MQTT_QOS_LEVEL_0); // <===== QoS
+  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_0); // <===== QoS
 
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
-    LOG_INFO("Tried to subscribe but command queue was full\n");
+    LOG_WARN("Tried to listen for event of interest, but command queue was full\n");
   }
-  LOG_INFO("Subscribed\n");
+  LOG_INFO("Listening for events of interest\n");
 }
-/*---------------------------------------------------------------------------*/
+
 static void publish(void)
 {
+  // Contacts
   if (other_flush == 1) {
-    memcpy(app_buffer+sizeof(char)*BUFFER_SIZE, other_id, BUFFER_SIZE);
+    strcpy(contact_msg, "{'my_id':");
+    strcat(contact_msg, my_id);
+    strcat(contact_msg, ",'other_id':");
+    strcat(contact_msg, other_id);
+    strcat(contact_msg, "}");
 
     mqtt_publish(&broker_connection, NULL,
-		 pub_topic, (uint8_t *)app_buffer,
-               	 strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
-    LOG_INFO("Published\n");
+		 contact_pub_topic, (uint8_t*) contact_msg,
+               	 strlen(contact_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
+    LOG_INFO("Contact sent\n");
     other_flush = 0;
   }
-}
-/*---------------------------------------------------------------------------*/
-static void connect_to_broker(void)
-{
-  mqtt_connect(&broker_connection, conf.broker_ip, conf.broker_port, BROKER_PROCESS_T * 3);
-  state = STATE_CONNECTING;
+  
+  // Event of interest
+  if (signal_event == 1) {
+    strcpy(event_msg, "{'my_id':");
+    strcat(event_msg, my_id);
+    strcat(event_msg, "}");
+
+    mqtt_publish(&broker_connection, NULL,
+		 contact_pub_topic, (uint8_t*) event_msg,
+               	 strlen(event_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
+
+    LOG_INFO("Event of interest sent\n");
+    signal_event = 0;
+  }
 }
 /*---------------------------------------------------------------------------*/
 static void update_broker_process(void)
 {
   switch(state) {
   case STATE_INIT:
-    mqtt_register(&broker_connection, &broker_process, my_id, on_broker_event, MAX_TCP_SEGMENT_SIZE);
-
+    mqtt_register(&broker_connection, &broker_process, my_id, mqtt_receiver, MAX_TCP_SEGMENT_SIZE);
     mqtt_set_username_password(&broker_connection, "use-token-auth", conf.auth_token);
 
     broker_connection.auto_reconnect = 0;
@@ -243,7 +266,8 @@ static void update_broker_process(void)
   case STATE_REGISTERED:
     if(uip_ds6_get_global(ADDR_PREFERRED) != NULL) {
       LOG_INFO("Joined broker network, connect attempt %u\n", connect_attempt);
-      connect_to_broker();
+      mqtt_connect(&broker_connection, conf.broker_ip, conf.broker_port, BROKER_PROCESS_T * 3);
+      state = STATE_CONNECTING;
     }
     etimer_set(&broker_process_timer, NET_CONNECT_PERIODIC);
     return;
@@ -309,7 +333,7 @@ static void update_broker_process(void)
   etimer_set(&broker_process_timer, BROKER_PROCESS_T);
 }
 /*---------------------------------------------------------------------------*/
-static void on_broadcast_receive(struct simple_udp_connection *c,
+static void udp_receiver(struct simple_udp_connection *c,
          			const uip_ipaddr_t *sender_addr,
          			uint16_t sender_port,
          			const uip_ipaddr_t *receiver_addr,
@@ -331,7 +355,7 @@ PROCESS_THREAD(broker_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  LOG_INFO("Started broker process\n");
+  LOG_INFO("Started backend communication process\n");
 
   init_config();
   update_config();
@@ -356,9 +380,9 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
   PROCESS_BEGIN();
 
-  LOG_INFO("Started broadcast process\n");
+  LOG_INFO("Started contacts detection process\n");
   
-  simple_udp_register(&broadcast_connection, BROADCAST_PORT, NULL, BROADCAST_PORT, on_broadcast_receive);
+  simple_udp_register(&broadcast_connection, BROADCAST_PORT, NULL, BROADCAST_PORT, udp_receiver);
   etimer_set(&broadcast_process_timer, BROADCAST_PROCESS_T);
 
   while(1) {
