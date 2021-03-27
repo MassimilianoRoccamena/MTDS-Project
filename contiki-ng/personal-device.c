@@ -221,11 +221,11 @@ static void publish(void)
 {
   // Contacts
   if (other_flush == 1) {
-    strcpy(contact_msg, "{'my_id':");
+    strcpy(contact_msg, "{\"my_id\":\"");
     strcat(contact_msg, my_id);
-    strcat(contact_msg, ",'other_id':");
+    strcat(contact_msg, "\",\"other_id\":\"");
     strcat(contact_msg, other_id);
-    strcat(contact_msg, "}");
+    strcat(contact_msg, "\"}");
 
     mqtt_publish(&broker_connection, NULL,
 		 contact_pub_topic, (uint8_t*) contact_msg,
@@ -237,9 +237,9 @@ static void publish(void)
   
   // Event of interest
   if (signal_event == 1) {
-    strcpy(event_msg, "{'my_id':");
+    strcpy(event_msg, "{\"my_id\":\"");
     strcat(event_msg, my_id);
-    strcat(event_msg, "}");
+    strcat(event_msg, "\"}");
 
     mqtt_publish(&broker_connection, NULL,
 		 contact_pub_topic, (uint8_t*) event_msg,
