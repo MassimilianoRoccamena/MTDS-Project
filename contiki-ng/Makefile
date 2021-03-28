@@ -3,5 +3,5 @@ all: $(CONTIKI_PROJECT)
 
 MODULES += os/net/app-layer/mqtt
 
-CONTIKI = /opt/contiki
+CONTIKI = /home/user/contiki
 include $(CONTIKI)/Makefile.include
