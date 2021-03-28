@@ -8,7 +8,7 @@
 #include "leds.h"
 
 #include "sys/log.h"
-#define LOG_MODULE 	"PersonalDevice"
+#define LOG_MODULE 	"ClientTriggerer"
 #define LOG_LEVEL 	LOG_LEVEL_INFO
 
 #include <string.h>
@@ -20,21 +20,21 @@
 #define BROKER_PORT         		1883
 #define BROADCAST_PORT 		   	1234
 /*---------------------------------------------------------------------------*/
-#define RETRY_FOREVER              0xFF
-#define RECONNECT_INTERVAL         (CLOCK_SECOND * 2)
-#define RECONNECT_ATTEMPTS         RETRY_FOREVER
-#define CONNECTION_STABLE_TIME     (CLOCK_SECOND * 5)
-#define NET_CONNECT_PERIODIC       (CLOCK_SECOND >> 2)
+#define RETRY_FOREVER              	0xFF
+#define RECONNECT_INTERVAL         	(CLOCK_SECOND * 2)
+#define RECONNECT_ATTEMPTS         	RETRY_FOREVER
+#define CONNECTION_STABLE_TIME     	(CLOCK_SECOND * 5)
+#define NET_CONNECT_PERIODIC       	(CLOCK_SECOND >> 2)
 /*---------------------------------------------------------------------------*/
-#define STATE_INIT            0
-#define STATE_REGISTERED      1
-#define STATE_CONNECTING      2
-#define STATE_CONNECTED       3
-#define STATE_PUBLISHING      4
-#define STATE_DISCONNECTED    5
-#define STATE_NEWCONFIG       6
-#define STATE_CONFIG_ERROR    0xFE
-#define STATE_ERROR           0xFF
+#define STATE_INIT            		0
+#define STATE_REGISTERED      		1
+#define STATE_CONNECTING      		2
+#define STATE_CONNECTED       		3
+#define STATE_READY      		4
+#define STATE_DISCONNECTED    		5
+#define STATE_NEWCONFIG       		6
+#define STATE_CONFIG_ERROR    		0xFE
+#define STATE_ERROR           		0xFF
 /*---------------------------------------------------------------------------*/
 #define CONFIG_AUTH_TOKEN_LEN    	32
 #define CONFIG_CMD_TYPE_LEN      	8
@@ -43,8 +43,11 @@
 #define DEFAULT_AUTH_TOKEN          	"AUTHZ"
 #define DEFAULT_SUBSCRIBE_CMD_TYPE  	"+"
 /*---------------------------------------------------------------------------*/
+#define CONTACTS_QUEUE_SIZE 		4
+/*---------------------------------------------------------------------------*/
 #define BROKER_PROCESS_T            (CLOCK_SECOND * 2)
-#define BROADCAST_PROCESS_T         (CLOCK_SECOND * 1)
+#define BROADCAST_PROCESS_T         (BROKER_PROCESS_T / CONTACTS_QUEUE_SIZE)
+#define SIGNAL_PROCESS_T            (CLOCK_SECOND * 10)
 /*---------------------------------------------------------------------------*/
 #define CONTACT_PUB_TOPIC   	"iot/contact/produce"
 #define EVENT_PUB_TOPIC   	"iot/event/produce"
@@ -57,7 +60,8 @@
 
 PROCESS(broker_process, "Backend communication process");
 PROCESS(broadcast_process, "Contacts detection process");
-AUTOSTART_PROCESSES(&broker_process, &broadcast_process);
+PROCESS(signal_process, "Events triggering process");
+AUTOSTART_PROCESSES(&broker_process, &broadcast_process, &signal_process);
 
 /*===========================================================================*/
 
@@ -74,8 +78,10 @@ static struct simple_udp_connection broadcast_connection;
 /*---------------------------------------------------------------------------*/
 static struct timer connection_life;
 static uint8_t connect_attempt;
+
 static struct etimer broker_process_timer;
 static struct etimer broadcast_process_timer;
+static struct etimer signal_process_timer;
 /*---------------------------------------------------------------------------*/
 static uint8_t state;
 /*---------------------------------------------------------------------------*/
@@ -84,18 +90,19 @@ static char event_pub_topic[SHORT_SIZE];
 static char event_sub_topic[SHORT_SIZE];
 /*---------------------------------------------------------------------------*/
 static char my_id[SHORT_SIZE];
-static char other_id[SHORT_SIZE];
-static uint8_t other_flush = 0;
+static char others_ids[CONTACTS_QUEUE_SIZE][SHORT_SIZE];
+static uint8_t others_count = 0;
+
 static char contact_msg[LONG_SIZE];
 static char event_msg[SHORT_SIZE];
+
 static uint8_t signal_event = 0;
 
 /*===========================================================================*/
 
-static void on_event_of_interest(void)
+static void event_of_interest(void)
 {
-  LOG_INFO("Event of interest received\n");
-  //LED
+  LOG_INFO("EVENT OF INTEREST RECEIVED!\n");
 }
 
 static void mqtt_receiver(struct mqtt_connection *m, mqtt_event_t event, void *data)
@@ -114,8 +121,8 @@ static void mqtt_receiver(struct mqtt_connection *m, mqtt_event_t event, void *d
     break;
   }
   case MQTT_EVENT_PUBLISH: {
-    LOG_INFO("MQTT: message received\n");   
-    on_event_of_interest();
+    LOG_INFO("MQTT: message received\n");
+    event_of_interest();
     break;
   }
   case MQTT_EVENT_SUBACK: {
@@ -209,7 +216,7 @@ static void subscribe(void)
 {
   mqtt_status_t status;
 
-  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_0); // <===== QoS
+  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_0);
 
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
     LOG_WARN("Tried to listen for event of interest, but command queue was full\n");
@@ -220,7 +227,9 @@ static void subscribe(void)
 static void publish(void)
 {
   // Contacts
-  if (other_flush == 1) {
+  for (int i=0; i< others_count; i++) {
+    char *other_id = others_ids[i];
+
     strcpy(contact_msg, "{\"my_id\":\"");
     strcat(contact_msg, my_id);
     strcat(contact_msg, "\",\"other_id\":\"");
@@ -231,9 +240,9 @@ static void publish(void)
 		 contact_pub_topic, (uint8_t*) contact_msg,
                	 strlen(contact_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
-    LOG_INFO("Contact sent\n");
-    other_flush = 0;
+    LOG_INFO("Contact %d sent\n", i+1);
   }
+  others_count = 0;
   
   // Event of interest
   if (signal_event == 1) {
@@ -261,7 +270,7 @@ static void update_broker_process(void)
     connect_attempt = 1;
 
     state = STATE_REGISTERED;
-    LOG_INFO("Init broker communications\n");
+    LOG_INFO("Init broker communication\n");
 
   case STATE_REGISTERED:
     if(uip_ds6_get_global(ADDR_PREFERRED) != NULL) {
@@ -278,7 +287,7 @@ static void update_broker_process(void)
 
   case STATE_CONNECTED:
 
-  case STATE_PUBLISHING:
+  case STATE_READY:
     if(timer_expired(&connection_life)) {
       connect_attempt = 0;
     }
@@ -286,11 +295,10 @@ static void update_broker_process(void)
     if(mqtt_ready(&broker_connection) && broker_connection.out_buffer_sent) {
       if(state == STATE_CONNECTED) {
         subscribe();
-        state = STATE_PUBLISHING;
+        state = STATE_READY;
       } else {
         publish();
       }
-      LOG_INFO("Sending to broker\n");
     }
     else {
       LOG_INFO("Sending to broker... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
@@ -340,13 +348,23 @@ static void udp_receiver(struct simple_udp_connection *c,
          			uint16_t receiver_port,
          			const uint8_t *data,
          			uint16_t datalen) {
-  
-  LOG_INFO("Detected contact with ");
-  LOG_INFO_6ADDR(sender_addr);
-  LOG_INFO("\n");
 
-  memcpy(other_id, data, datalen);
-  other_flush = 1;
+  char *received_id = (char*) data;
+  
+  LOG_INFO("Detected contact with %s", received_id);
+  
+  for (int i=0; i<others_count; i++) {
+    if (strcmp(received_id, others_ids[i]) == 0) {
+      LOG_INFO(", skipped\n");
+      return;
+    }
+  }
+
+  char *other_id = others_ids[others_count];
+  strcpy(other_id, received_id);
+  others_count = others_count + 1;
+
+  LOG_INFO(", saved\n");
 }
 
 /*===========================================================================*/
@@ -389,9 +407,29 @@ PROCESS_THREAD(broadcast_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&broadcast_process_timer));
     etimer_reset(&broadcast_process_timer);
     
-    LOG_INFO("Sending broadcast\n");
+    LOG_INFO("Sending contacts broadcast\n");
 
     simple_udp_sendto(&broadcast_connection, my_id, sizeof(my_id), &addr);
+  }
+
+  PROCESS_END();
+}
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(signal_process, ev, data)
+{
+  PROCESS_BEGIN();
+
+  LOG_INFO("Started event triggering process\n");
+
+  etimer_set(&signal_process_timer, SIGNAL_PROCESS_T);
+
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&signal_process_timer));
+    etimer_reset(&signal_process_timer);
+
+    LOG_INFO("Triggering event of interest\n");
+
+    signal_event = 1;
   }
 
   PROCESS_END();
