@@ -251,7 +251,7 @@ static void publish(void)
     strcat(event_msg, "\"}");
 
     mqtt_publish(&broker_connection, NULL,
-		 contact_pub_topic, (uint8_t*) event_msg,
+		 event_pub_topic, (uint8_t*) event_msg,
                	 strlen(event_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
     LOG_INFO("Event of interest sent\n");
