@@ -34,10 +34,12 @@
 #define STATE_INIT            		0
 #define STATE_REGISTERED      		1
 #define STATE_CONNECTING      		2
-#define STATE_CONNECTED       		3
-#define STATE_READY      		4
-#define STATE_DISCONNECTED    		5
-#define STATE_NEWCONFIG       		6
+#define STATE_CONNECTED1       		3
+#define STATE_CONNECTED2       		4
+#define STATE_READY1      		5
+#define STATE_READY2      		6
+#define STATE_DISCONNECTED    		7
+#define STATE_NEWCONFIG       		8
 #define STATE_CONFIG_ERROR    		0xFE
 #define STATE_ERROR           		0xFF
 /*---------------------------------------------------------------------------*/
@@ -48,11 +50,13 @@
 #define DEFAULT_AUTH_TOKEN          	"AUTHZ"
 #define DEFAULT_SUBSCRIBE_CMD_TYPE  	"+"
 /*---------------------------------------------------------------------------*/
-#define CONTACTS_QUEUE_SIZE 		4
+#define CONTACTS_QUEUE_SIZE 		2
 /*---------------------------------------------------------------------------*/
 #define BROKER_PROCESS_T            (CLOCK_SECOND * 2)
 #define BROADCAST_PROCESS_T         (BROKER_PROCESS_T / CONTACTS_QUEUE_SIZE)
 #define SIGNAL_PROCESS_T            (CLOCK_SECOND * 10)
+/*---------------------------------------------------------------------------*/
+#define BROKER_READY_WAIT_T         (CLOCK_SECOND / 10)
 /*---------------------------------------------------------------------------*/
 #define CONTACT_PUB_TOPIC   	"iot/contact/produce"
 #define EVENT_PUB_TOPIC   	"iot/event/produce"
@@ -83,6 +87,7 @@ static struct simple_udp_connection broadcast_connection;
 /*---------------------------------------------------------------------------*/
 static struct timer connection_life;
 static uint8_t connect_attempt;
+static uint8_t connect1 = 1;
 
 static struct etimer broker_process_timer;
 static struct etimer broadcast_process_timer;
@@ -116,7 +121,11 @@ static void mqtt_receiver(struct mqtt_connection *m, mqtt_event_t event, void *d
   case MQTT_EVENT_CONNECTED: {
     LOG_INFO("MQTT: connected\n");
     timer_set(&connection_life, CONNECTION_STABLE_TIME);
-    state = STATE_CONNECTED;
+    if (connect1 == 1) {
+      state = STATE_CONNECTED1;
+    } else {
+      state = STATE_CONNECTED2;
+    }
     break;
   }
   case MQTT_EVENT_DISCONNECTED: {
@@ -221,7 +230,7 @@ static void subscribe(void)
 {
   mqtt_status_t status;
 
-  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_0);
+  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_2);
 
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
     LOG_WARN("Tried to listen for event of interest, but command queue was full\n");
@@ -229,9 +238,8 @@ static void subscribe(void)
   LOG_INFO("Listening for events of interest\n");
 }
 
-static void publish(void)
+static void publish1(void)
 {
-  // Contacts
   for (int i=0; i< others_count; i++) {
     char *other_id = others_ids[i];
 
@@ -249,9 +257,12 @@ static void publish(void)
       LOG_INFO("Contact %s sent\n", other_id);
     }
   }
+
   others_count = 0;
-  
-  // Event of interest
+}
+
+static void publish2(void)
+{
   if (signal_event == 1) {
     strcpy(event_msg, "{\"my_id\":\"");
     strcat(event_msg, my_id);
@@ -259,11 +270,12 @@ static void publish(void)
 
     mqtt_publish(&broker_connection, NULL,
 		 event_pub_topic, (uint8_t*) event_msg,
-               	 strlen(event_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
+               	 strlen(event_msg), MQTT_QOS_LEVEL_1, MQTT_RETAIN_ON);
     
     if (LOG_EVENT_PUB == 1) {
       LOG_INFO("Event of interest sent\n");
     }
+
     signal_event = 0;
   }
 }
@@ -294,23 +306,46 @@ static void update_broker_process(void)
     LOG_INFO("Connecting to broker, retry %u...\n", connect_attempt);
     break;
 
-  case STATE_CONNECTED:
-
-  case STATE_READY:
+  case STATE_CONNECTED1:
+  case STATE_READY1:
     if(timer_expired(&connection_life)) {
       connect_attempt = 0;
     }
 
     if(mqtt_ready(&broker_connection) && broker_connection.out_buffer_sent) {
-      if(state == STATE_CONNECTED) {
+      if(state == STATE_CONNECTED1) {
         subscribe();
-        state = STATE_READY;
+        state = STATE_READY1;
       } else {
-        publish();
+        publish1();
+        connect1 = 0;
+        state = STATE_READY2;
       }
     }
     else {
-      LOG_INFO("Sending to broker... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
+      LOG_INFO("Sending contacts... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
+    }
+    etimer_set(&broker_process_timer, BROKER_READY_WAIT_T);
+    return;
+
+  case STATE_CONNECTED2:
+  case STATE_READY2:
+    if(timer_expired(&connection_life)) {
+      connect_attempt = 0;
+    }
+
+    if(mqtt_ready(&broker_connection) && broker_connection.out_buffer_sent) {
+      if(state == STATE_CONNECTED2) {
+        subscribe();
+        state = STATE_READY2;
+      } else {
+        publish2();
+        connect1 = 1;
+        state = STATE_READY1;
+      }
+    }
+    else {
+      LOG_INFO("Sending event of interest... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
     }
     break;
 
@@ -436,7 +471,7 @@ PROCESS_THREAD(signal_process, ev, data)
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&signal_process_timer));
     etimer_reset(&signal_process_timer);
-
+    
     LOG_INFO("Triggering event of interest\n");
 
     signal_event = 1;

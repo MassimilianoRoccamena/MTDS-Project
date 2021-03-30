@@ -214,7 +214,7 @@ static void subscribe(void)
 {
   mqtt_status_t status;
 
-  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_0);
+  status = mqtt_subscribe(&broker_connection, NULL, event_sub_topic, MQTT_QOS_LEVEL_2);
 
   if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
     LOG_WARN("Tried to listen for event of interest, but command queue was full\n");
@@ -224,7 +224,6 @@ static void subscribe(void)
 
 static void publish(void)
 {
-  // Contacts
   for (int i=0; i< others_count; i++) {
     char *other_id = others_ids[i];
 
@@ -287,7 +286,7 @@ static void update_broker_process(void)
       }
     }
     else {
-      LOG_INFO("Sending to broker... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
+      LOG_INFO("Sending contacts... (MQTT state=%d, q=%u)\n", broker_connection.state, broker_connection.out_queue_full);
     }
     break;
 
