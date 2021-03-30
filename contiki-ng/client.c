@@ -15,6 +15,10 @@
 
 /*===========================================================================*/
 
+#define LOG_BROADCAST_SND		0
+#define LOG_BROADCAST_RCV		0
+#define LOG_CONTACT_PUB			0
+/*---------------------------------------------------------------------------*/
 #define MAX_TCP_SEGMENT_SIZE    	32
 /*---------------------------------------------------------------------------*/
 #define BROKER_PORT         		1883
@@ -234,7 +238,9 @@ static void publish(void)
 		 contact_pub_topic, (uint8_t*) contact_msg,
                	 strlen(contact_msg), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
-    LOG_INFO("Contact %d sent\n", i+1);
+    if (LOG_CONTACT_PUB == 1) {
+      LOG_INFO("Contact %s sent\n", other_id);
+    }
   }
   others_count = 0;
 }
@@ -331,20 +337,19 @@ static void udp_receiver(struct simple_udp_connection *c,
 
   char *received_id = (char*) data;
   
-  LOG_INFO("Detected contact with %s", received_id);
-  
   for (int i=0; i<others_count; i++) {
     if (strcmp(received_id, others_ids[i]) == 0) {
-      LOG_INFO(", skipped\n");
       return;
     }
+  }
+
+  if (LOG_BROADCAST_RCV == 1) {
+    LOG_INFO("Detected contact with %s\n", received_id);
   }
 
   char *other_id = others_ids[others_count];
   strcpy(other_id, received_id);
   others_count = others_count + 1;
-
-  LOG_INFO(", saved\n");
 }
 
 /*===========================================================================*/
@@ -387,7 +392,9 @@ PROCESS_THREAD(broadcast_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&broadcast_process_timer));
     etimer_reset(&broadcast_process_timer);
     
-    LOG_INFO("Sending contacts broadcast\n");
+   if (LOG_BROADCAST_SND == 1) {
+      LOG_INFO("Sending contacts broadcast\n");
+    }
 
     simple_udp_sendto(&broadcast_connection, my_id, sizeof(my_id), &addr);
   }
