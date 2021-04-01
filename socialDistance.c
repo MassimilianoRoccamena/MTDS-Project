@@ -305,7 +305,10 @@ int main(int argc, char** argv){
         struct message individualsMessage[size][maxSize];
         if(iterations % simulatedDay == 0){
                 day++;
-                printf("DAY %d\n", day);
+		if(rank == 0){
+			printf("DAY %d\n", day);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
                 printInfected(firstRegion);
         }
         

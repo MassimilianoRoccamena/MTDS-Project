@@ -1,0 +1,1 @@
+mpicc -o project socialDistance.c -lm
