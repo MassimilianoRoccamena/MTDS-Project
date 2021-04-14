@@ -1,1 +1,1 @@
-mpirun -H localhost:4 project 10 1 4 4 1 1 1 1 1
+mpirun -H localhost:2 project 10 5 20 20 10 10 0.5 1 1
