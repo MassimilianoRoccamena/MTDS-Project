@@ -81,14 +81,4 @@ public class Client extends AbstractActor {
     static Props props() {
         return Props.create(Client.class);
     }
-
-
-    public static void main(String[] args) {
-        Config conf =
-                ConfigFactory.parseFile(new File("config/client.conf"));
-        ActorSystem sys = ActorSystem.create("Client1", conf);
-        ActorRef client = sys.actorOf(Client.props(), "clientActor");
-        final ExecutorService exec = Executors.newFixedThreadPool(1);
-        exec.submit(() -> client.tell(new ActivateMessage(), ActorRef.noSender()));
-    }
 }
