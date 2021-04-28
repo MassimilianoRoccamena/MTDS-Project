@@ -112,7 +112,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>smarthome.Backend</mainClass>
+              <mainClass>smarthome.backend.Backend</mainClass>
             </manifest>
             <manifestEntries>
               <Class-Path>lib/</Class-Path>

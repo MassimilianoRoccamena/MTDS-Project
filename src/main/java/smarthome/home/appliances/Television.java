@@ -1,16 +1,15 @@
-package smarthome.home;
+package smarthome.home.appliances;
 
 import akka.actor.Props;
-import scala.sys.Prop;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ResponseMessage;
 
-public class Television extends Appliance{
+public class Television extends Appliance {
 
     @Override
     public void activate(ActivateMessage message) {
-        this.server = getContext().getParent();
-        server.tell(new ResponseMessage(false, "Television connected and activated"), self());
+        this.room = getContext().getParent();
+        room.tell(new ResponseMessage(false, "Television connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Television";
         this.isOn = false;

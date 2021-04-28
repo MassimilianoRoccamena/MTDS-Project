@@ -1,14 +1,14 @@
-package smarthome.home;
+package smarthome.home.appliances;
 
 import akka.actor.Props;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ResponseMessage;
 
-public class WashingMachine extends Appliance{
+public class DishWasher extends Appliance {
     @Override
     public void activate(ActivateMessage message) {
-        this.server = getContext().getParent();
-        server.tell(new ResponseMessage(false, "Washing Machine connected and activated"), self());
+        this.room = getContext().getParent();
+        room.tell(new ResponseMessage(false, "Washing Machine connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Washing Machine";
         this.isOn = false;
@@ -18,6 +18,6 @@ public class WashingMachine extends Appliance{
     }
 
     public static Props props(){
-        return Props.create(WashingMachine.class);
+        return Props.create(DishWasher.class);
     }
 }

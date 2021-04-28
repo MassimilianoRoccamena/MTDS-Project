@@ -1,7 +1,6 @@
-package smarthome.home;
+package smarthome.home.appliances;
 
 import akka.actor.*;
-import scala.Int;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.RequestMessage;
 import smarthome.messages.ResponseMessage;
@@ -16,7 +15,7 @@ public abstract class Appliance extends AbstractActor {
     public boolean functionWithTimer;
     public int durationMilli;
     public boolean functionWithTemperature;
-    public ActorRef server;
+    public ActorRef room;
     public ActorSystem system;
     Cancellable functioningProcess;
 
@@ -63,14 +62,14 @@ public abstract class Appliance extends AbstractActor {
                        .scheduler()
                        .scheduleOnce(Duration.ofMillis(durationMilli), () -> {
                            isOn = false;
-                           notifyStop(functionWithTimer, server);
+                           notifyStop(functionWithTimer, room);
                        },system.dispatcher());
 
             }
             if(this.functionWithTemperature){
                 functioningProcess = system
                         .scheduler()
-                        .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), () -> notifyChangeTemperature(server),system.dispatcher());
+                        .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), () -> notifyChangeTemperature(room),system.dispatcher());
             }
         }
     }

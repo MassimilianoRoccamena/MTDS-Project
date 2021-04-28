@@ -1,4 +1,4 @@
-package smarthome;
+package smarthome.supervisor;
 
 import akka.actor.ActorContext;
 import akka.actor.ActorRef;

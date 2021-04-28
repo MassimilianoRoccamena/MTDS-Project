@@ -1,4 +1,4 @@
-package smarthome.home;
+package smarthome.home.appliances;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import smarthome.messages.ActivateMessage;
@@ -8,8 +8,8 @@ public class AirConditioning extends Appliance {
 
     @Override
     public void activate(ActivateMessage message) {
-        this.server = getContext().getParent();
-        server.tell(new ResponseMessage(false, "Air conditioning connected and activated"), self());
+        this.room = getContext().getParent();
+        room.tell(new ResponseMessage(false, "Air conditioning connected and activated"), self());
         this.system = getContext().getSystem();
         this.name = "Air Conditioning";
         this.isOn = false;

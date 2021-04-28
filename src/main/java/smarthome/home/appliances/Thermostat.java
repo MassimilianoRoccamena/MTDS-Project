@@ -1,4 +1,4 @@
-package smarthome.home;
+package smarthome.home.appliances;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -6,7 +6,7 @@ import smarthome.messages.ActivateMessage;
 import smarthome.messages.RequestMessage;
 import smarthome.messages.ResponseMessage;
 
-public class Thermostat extends Appliance{
+public class Thermostat extends Appliance {
 
     private float temperature;
 
@@ -40,7 +40,7 @@ public class Thermostat extends Appliance{
         this.functionWithTemperature = true;
         this.durationMilli = 10000;
         this.isOn = false;
-        this.server = sender();
+        this.room = sender();
         this.temperature = 20;
     }
 
