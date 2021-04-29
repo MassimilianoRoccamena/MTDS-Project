@@ -146,7 +146,7 @@ struct region *createRegions(float areaWidth, float areaLength, float regionWidt
     return firstRegion;
 }
 //create the list of individuals
-void createIndividuals(int ind, int inf, int indr, int infr, int rank, float length, float width, float velocity, struct region *firstRegion)
+void createIndividuals(int ind, int inf, int indr, int infr, int rank, float length, float width, float velocity, struct region *firstRegion, float infectDistance)
 {
     int tind = ind;
     int tinf = inf;
@@ -174,10 +174,10 @@ void createIndividuals(int ind, int inf, int indr, int infr, int rank, float len
             //printf("%f %f\n", randomX, randomY);
             random = abs(1 / MPI_Wtime());
             //printf("%d\n", random);
-            newIndividual->initialxPosition = j->xCoordinateStart + (random % (int)length) + randomX;
+            newIndividual->initialxPosition = j->xCoordinateStart + infectDistance + (random % (int)(length - 2*infectDistance)) + randomX;
             random = abs(1 / MPI_Wtime());
             //printf("%f\n", newIndividual->initialxPosition);
-            newIndividual->initialYPosition = j->yCoordinateStart + (random % (int)width) + randomY;
+            newIndividual->initialYPosition = j->yCoordinateStart + infectDistance + (random % (int)(width - 2*infectDistance)) + randomY;
             newIndividual->actualXPosition = newIndividual->initialxPosition;
             newIndividual->actualYPosition = newIndividual->initialYPosition;
             random = abs(1 / MPI_Wtime());
@@ -283,9 +283,15 @@ float changeDirection(float x, float y, float xMax, float yMax, float actualAngl
 void printIndividuals(struct region *first, int day)
 {
     struct region *p;
+    struct individual *q;
+    
     for (p = first; p != NULL; p = p->next)
     {
-        printf("DAY: %d REGION %d: %d infected, %d susceptible, %d immune\n", day, p->regionNumber, p->infected, p->susceptible, p->immune);
+        /*
+        for(q = p->firstIndividual; q != NULL; q = q->next){
+            printf("REGION: %d INDIVIDUAL: %d Coordinates: %f %f %c\n", p->regionNumber, q->number, q->actualXPosition, q->actualYPosition, q->state);
+        }*/
+        printf("DAY: %d REGION: %d %d infected, %d susceptible, %d immune\n", day, p->regionNumber, p->infected, p->susceptible, p->immune);
     }
     printf("\n");
     return;
@@ -317,12 +323,13 @@ void updateIndividual(struct region *region, char s, int taim, int tain, int cwi
             p->timeAsInfect = tain;
             p->state = s;
             p->contactWithInfect = cwi;
+            break;
         }
     }
     return;
 }
 //add an individual to a region in the same process
-void addIndividual(struct region *region, struct individual *individual, float nextX, float nextY)
+void addIndividual(struct region *region, struct individual *individual, float nextX, float nextY, int rn)
 {
     struct individual *newIndividual = malloc(sizeof(struct individual));
     newIndividual->initialxPosition = individual->initialxPosition;
@@ -336,7 +343,7 @@ void addIndividual(struct region *region, struct individual *individual, float n
     newIndividual->timeAsImmune = individual->timeAsImmune;
     newIndividual->timeAsInfect = individual->timeAsInfect;
     newIndividual->movement = individual->movement;
-    newIndividual->move = false;
+    newIndividual->move = region->regionNumber > rn;
     newIndividual->number = individual->number;
     newIndividual->state = individual->state;
     newIndividual->next = region->firstIndividual;
@@ -386,7 +393,7 @@ bool checkRegionBorders(struct region *reg, struct region *firstRegion, struct i
             if (!individualAlreadyInRegion(p, ind->number))
             {
                 //printf("Individual added to region %d. Coordinates: %f %f\n", p->regionNumber, nextX, nextY);
-                addIndividual(p, ind, nextX, nextY);
+                addIndividual(p, ind, nextX, nextY, reg->regionNumber);
             }
             else
             {
@@ -603,7 +610,7 @@ int main(int argc, char **argv)
     firstRegion = createRegions(areaWidth, areaLength, regionWidth, regionLength, rank, localRegions, size, regionRest);
     //printf("[PROCESS %d] Number of individuals: %d\n", rank, localIndividuals);
     //printf("[PROCESS %d] Number of infected: %d\n", rank, localInfected);
-    createIndividuals(individualsforRegion, infectedforRegion, individualRest, infectedRest, rank, regionLength, regionWidth, velocity, firstRegion);
+    createIndividuals(individualsforRegion, infectedforRegion, individualRest, infectedRest, rank, regionLength, regionWidth, velocity, firstRegion, spreadingDistance);
     MPI_Type_contiguous(individuals, single_individual_message, &all_individuals_message);
     MPI_Type_commit(&all_individuals_message);
 
@@ -683,9 +690,8 @@ int main(int argc, char **argv)
                         iterate = iterate + 4;
                     }
                     //printf("[PROCESS %d, REGION %d] x: %f y: %f state: %c\n", rank, q->regionNumber, nextxCoordinate, nextyCoordinate, p->state);
-                    bool xBound = nextxCoordinate < q->xCoordinateStart - spreadingDistance || nextxCoordinate > q->xCoordinateEnd + spreadingDistance;
-                    bool yBound = nextyCoordinate < q->yCoordinateStart - spreadingDistance || nextyCoordinate > q->yCoordinateEnd + spreadingDistance;
-                    if (xBound || yBound) //check if an individual is not in the area of influence of a region and in that case remove it from the list
+                    
+                    if (!insideRegion(nextxCoordinate, nextyCoordinate, q, spreadingDistance, spreadingDistance)) //check if an individual is not in the area of influence of a region and in that case remove it from the list
                     {
                         //printf("[PROCESS %d ITERATION %d] Removing individual from region %d coordinates: %f %f\n", rank, iterations, q->regionNumber, nextxCoordinate, nextyCoordinate);
                         struct individual *temp = p;
