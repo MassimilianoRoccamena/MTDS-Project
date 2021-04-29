@@ -174,10 +174,10 @@ void createIndividuals(int ind, int inf, int indr, int infr, int rank, float len
             //printf("%f %f\n", randomX, randomY);
             random = abs(1 / MPI_Wtime());
             //printf("%d\n", random);
-            newIndividual->initialxPosition = j->xCoordinateStart + infectDistance + (random % (int)(length - 2*infectDistance)) + randomX;
+            newIndividual->initialxPosition = j->xCoordinateStart + infectDistance + (random % (int)(length - 2 * infectDistance)) + randomX;
             random = abs(1 / MPI_Wtime());
             //printf("%f\n", newIndividual->initialxPosition);
-            newIndividual->initialYPosition = j->yCoordinateStart + infectDistance + (random % (int)(width - 2*infectDistance)) + randomY;
+            newIndividual->initialYPosition = j->yCoordinateStart + infectDistance + (random % (int)(width - 2 * infectDistance)) + randomY;
             newIndividual->actualXPosition = newIndividual->initialxPosition;
             newIndividual->actualYPosition = newIndividual->initialYPosition;
             random = abs(1 / MPI_Wtime());
@@ -284,7 +284,7 @@ void printIndividuals(struct region *first, int day)
 {
     struct region *p;
     struct individual *q;
-    
+
     for (p = first; p != NULL; p = p->next)
     {
         /*
@@ -353,8 +353,8 @@ void addIndividual(struct region *region, struct individual *individual, float n
 //check if some coordinates are in a region
 bool insideRegion(float actualX, float actualY, struct region *reg, float xMove, float yMove)
 {
-    bool xBound = reg->xCoordinateStart - xMove <= actualX && reg->xCoordinateEnd + xMove >= actualX;
-    bool yBound = reg->yCoordinateStart - yMove <= actualY && reg->yCoordinateEnd + yMove >= actualY;
+    bool xBound = reg->xCoordinateStart - xMove <= actualX && reg->xCoordinateEnd + xMove > actualX;
+    bool yBound = reg->yCoordinateStart - yMove <= actualY && reg->yCoordinateEnd + yMove > actualY;
     return xBound && yBound;
 }
 //check if an invidual is in the borders of a region
@@ -555,6 +555,18 @@ void manageReceivedIndividuals(int individuals, struct message buffer[], struct 
         }
     }
 }
+//calculate the total number of infected to communicate to the other processes
+int totalInfected(struct region *first)
+{
+    struct region *p;
+    int total = 0;
+    for (p = first; p != NULL; p = p->next)
+    {
+        total += p->infected;
+    }
+    return total;
+}
+
 //check if a susceptible individual is near an infected one
 void checkInfected(struct individual *individual, struct region *region, float safeDistance)
 {
@@ -619,6 +631,9 @@ int main(int argc, char **argv)
     unsigned long secondsinTenDays = 864000;
     int iterations = 0;
     int day = 0;
+    int totalLocalInfected = 0;
+    int totalRemoteInfected = 0;
+    bool continueExecution = true;
     float iterationTime = simulationSeconds;
     int simulatedDay = secondsInDay / iterationTime;                 //number of iterations for a day
     int simulatedTenDays = secondsinTenDays / iterationTime;         //number of iterations for 10 days
@@ -626,8 +641,9 @@ int main(int argc, char **argv)
     int simulatedThreeMonths = secondsInThreeMonths / iterationTime; //number of iterations for three months
     struct message sendBuffer[individuals];                          //array to save the individuals to send to other processes
     struct message receiveBuffer[individuals];                       //array to save the individuals coming from other processes
+    MPI_Request request;
 
-    while (1)
+    while (continueExecution)
     {
         iterations++;
         struct individual *p;
@@ -637,7 +653,37 @@ int main(int argc, char **argv)
         {
             day++;
             printIndividuals(firstRegion, day);
+            totalLocalInfected = totalInfected(firstRegion);
+            continueExecution = totalLocalInfected > 0;
             MPI_Barrier(MPI_COMM_WORLD);
+            //if the number of infected is positive send it to the other processes
+            for (int i = 0; i < size && continueExecution; i++)
+            {
+                if (i != rank)
+                {
+                    MPI_Isend(&totalLocalInfected, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &request);
+                }
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            //receive the number of infected from the other processes
+            for (int i = 0; i < size; i++)
+            {
+                if (i != rank)
+                {
+                    int check = 0;
+                    MPI_Iprobe(i, 0, MPI_COMM_WORLD, &check, MPI_STATUS_IGNORE);
+                    if (check == 1)
+                    {
+                        //printf("[PROCESS %d] Receiving from %d\n", rank, i);
+                        MPI_Recv(&totalRemoteInfected, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        if(totalRemoteInfected > 0){
+                            continueExecution = true;
+                        }
+                    }
+                }
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+
         }
         resetRegions(firstRegion);
         //iteration to move each individual of each region
@@ -690,7 +736,7 @@ int main(int argc, char **argv)
                         iterate = iterate + 4;
                     }
                     //printf("[PROCESS %d, REGION %d] x: %f y: %f state: %c\n", rank, q->regionNumber, nextxCoordinate, nextyCoordinate, p->state);
-                    
+
                     if (!insideRegion(nextxCoordinate, nextyCoordinate, q, spreadingDistance, spreadingDistance)) //check if an individual is not in the area of influence of a region and in that case remove it from the list
                     {
                         //printf("[PROCESS %d ITERATION %d] Removing individual from region %d coordinates: %f %f\n", rank, iterations, q->regionNumber, nextxCoordinate, nextyCoordinate);
@@ -729,7 +775,6 @@ int main(int argc, char **argv)
             }
         }
 
-        MPI_Request request;
         struct message msg = sendBuffer[0];
         bool send = (msg.state == 'i' || msg.state == 'c' || msg.state == 's'); //check if there are individuals to send to other processes
 
