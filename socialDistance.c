@@ -346,8 +346,8 @@ void addIndividual(struct region *region, struct individual *individual, float n
 //check if some coordinates are in a region
 bool insideRegion(float actualX, float actualY, struct region *reg, float xMove, float yMove)
 {
-    bool xBound = reg->xCoordinateStart - xMove <= actualX && reg->xCoordinateEnd + xMove > actualX;
-    bool yBound = reg->yCoordinateStart - yMove <= actualY && reg->yCoordinateEnd + yMove > actualY;
+    bool xBound = reg->xCoordinateStart - xMove <= actualX && reg->xCoordinateEnd + xMove >= actualX;
+    bool yBound = reg->yCoordinateStart - yMove <= actualY && reg->yCoordinateEnd + yMove >= actualY;
     return xBound && yBound;
 }
 //check if an invidual is in the borders of a region
@@ -683,8 +683,8 @@ int main(int argc, char **argv)
                         iterate = iterate + 4;
                     }
                     //printf("[PROCESS %d, REGION %d] x: %f y: %f state: %c\n", rank, q->regionNumber, nextxCoordinate, nextyCoordinate, p->state);
-                    bool xBound = nextxCoordinate <= q->xCoordinateStart - spreadingDistance || nextxCoordinate >= q->xCoordinateEnd + spreadingDistance;
-                    bool yBound = nextyCoordinate <= q->yCoordinateStart - spreadingDistance || nextyCoordinate >= q->yCoordinateEnd + spreadingDistance;
+                    bool xBound = nextxCoordinate < q->xCoordinateStart - spreadingDistance || nextxCoordinate > q->xCoordinateEnd + spreadingDistance;
+                    bool yBound = nextyCoordinate < q->yCoordinateStart - spreadingDistance || nextyCoordinate > q->yCoordinateEnd + spreadingDistance;
                     if (xBound || yBound) //check if an individual is not in the area of influence of a region and in that case remove it from the list
                     {
                         //printf("[PROCESS %d ITERATION %d] Removing individual from region %d coordinates: %f %f\n", rank, iterations, q->regionNumber, nextxCoordinate, nextyCoordinate);
