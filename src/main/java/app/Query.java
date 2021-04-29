@@ -17,7 +17,7 @@ import static org.apache.spark.sql.functions.*;
 
 public class Query 
 {
-    private static final String name = "Query3";
+    private static final String name = "CovidQueries";
     private static final boolean useCache = true;
 
     public static void main( String[] args )
@@ -59,7 +59,7 @@ public class Query
         df = df.withColumn("Q1", 
                                 avg("cases").over(window));
         
-        //df.persist();
+        df.persist();
         System.out.println("<--- QUERY1 --->\n");
         df.show();
 
@@ -78,7 +78,7 @@ public class Query
 
         df = df.drop("lagged");
 
-        //df.persist();
+        df.persist();
         System.out.println("<--- QUERY2 --->\n");
         df.show();
 
@@ -88,6 +88,7 @@ public class Query
 
         df = df.orderBy(desc("sum(Q2)")).limit(10).select("country", "sum(Q2)");
 
+        df.persist();
         System.out.println("<--- QUERY3 --->\n");
         df.show();
         
