@@ -1,2 +1,1 @@
-cd ./order
-./mvnw spring-boot:run
+java -jar ./order/target/order-0.0.1-SNAPSHOT.jar

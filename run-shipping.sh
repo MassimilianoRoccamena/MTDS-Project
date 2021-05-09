@@ -1,2 +1,1 @@
-cd ./shipping
-./mvnw spring-boot:run
+java -jar ./shipping/target/shipping-0.0.1-SNAPSHOT.jar

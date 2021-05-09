@@ -1,2 +1,1 @@
-cd ./user
-./mvnw spring-boot:run
+java -jar ./user/target/user-0.0.1-SNAPSHOT.jar
