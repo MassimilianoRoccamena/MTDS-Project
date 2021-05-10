@@ -10,55 +10,68 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import static akka.pattern.Patterns.ask;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class UserInterface extends AbstractActor {
     private String room;
     private ActorRef panel;
     private Map<String, ActorRef> rooms = new HashMap<>();
+    public final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(RoomsMessage.class, this::startUserInterface)
                 .match(ActivateMessage.class, this::controlPanel)
                 .match(ResponseMessage.class, this::showMessage)
                 .build();
     }
 
-    private void startUserInterface(RoomsMessage message){
-        this.rooms = message.getRooms();
-        roomsList();
-    }
     private void controlPanel(ActivateMessage message){
         this.panel = sender();
+        roomsList();
     }
 
     public void roomsList(){
-        boolean room = true;
-        StringBuilder list;
-        String name = "";
-        while (room){
-            list = new StringBuilder("-----------WELCOME TO THE SMART HOUSE INTERFACE-----------------\n-----ROOMS LIST-----\n");
-            for(Map.Entry<String, ActorRef> ref: rooms.entrySet()){
-                list.append(ref.getKey()).append("\n");
+        try{
+            boolean room = true;
+            StringBuilder list;
+            String name = "";
+            while (room){
+                list = new StringBuilder("-----------WELCOME TO THE SMART HOUSE INTERFACE-----------------\n-----ROOMS LIST-----\n");
+                for(Map.Entry<String, ActorRef> ref: rooms.entrySet()){
+                    list.append(ref.getKey()).append("\n");
+                }
+                list.append("---------------------\n");
+                list.append("Insert 1 to refresh rooms list\n");
+                list.append("Insert room name");
+                System.out.println(list);
+                Scanner scanner = new Scanner(System.in);
+                name = scanner.nextLine();
+                if(name.equals("1")){
+                    try {
+                        scala.concurrent.Future<Object> waitingForRooms = ask(this.panel, new RequestMessage(MessageType.ROOMSLIST, null), 5000);
+                        RoomsMessage message = (RoomsMessage) waitingForRooms.result(timeout, null);
+                        this.rooms = message.getRooms();
+                    }catch (Exception e){
+                        System.out.println("[ERROR] Could not get the rooms list");
+                        roomsList();
+                    }
+                }
+                else if(rooms.containsKey(name)){
+                    room = false;
+                    this.room = name;
+                }
+                else{
+                    System.out.println("[ERROR] The room does not exist");
+                }
             }
-            list.append("---------------------\n");
-            list.append("Insert 1 to refresh rooms list\n");
-            list.append("Insert room name");
-            System.out.println(list);
-            Scanner scanner = new Scanner(System.in);
-            name = scanner.nextLine();
-            if(name.equals("1")){
-                this.panel.tell(new RequestMessage(MessageType.ROOMSLIST, ""), self());
-            }
-            else if(rooms.containsKey(name)){
-                room = false;
-                this.room = name;
-            }
-            else{
-                System.out.println("[ERROR] The room does not exist");
-            }
+            this.panel.tell(new RequestMessage(MessageType.MACHINELIST, this.room), self());
+
+        }catch (Exception e){
+            System.out.println("Exception in room choice");
         }
-        this.panel.tell(new RequestMessage(MessageType.MACHINELIST, this.room), self());
+
     }
 
     private void showMessage(ResponseMessage message){

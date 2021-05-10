@@ -2,7 +2,6 @@ package smarthome.home;
 
 import akka.actor.*;
 import smarthome.messages.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,12 +21,12 @@ public class ControlPanel extends AbstractActor{
                 .build();
     }
 
+
     private void activatePanel(ActivateMessage message){
-        this.backend = context().actorSelection("akka.tcp://Backend@192.168.56.101:2550/user/backend");
+        this.backend = context().actorSelection("akka://Backend@192.168.56.101:2550/user/backend");
         this.backend.tell(new ResponseMessage(false, "Control Panel Activated"), self());
         this.ui = context().actorOf(UserInterface.props(), "userInterface");
         ui.tell(new ActivateMessage(), self());
-        ui.tell(new RoomsMessage(this.rooms), self());
     }
 
     private void requestHandle(RequestMessage message){
@@ -35,10 +34,11 @@ public class ControlPanel extends AbstractActor{
         switch (message.getType()){
             case NEWROOM:
                 this.rooms.put(message.getArg(), sender());
+                getContext().watch(sender());
                 this.backend.tell(new ConsumptionMessage(message.getArg(), 0), self());
                 break;
             case ROOMSLIST:
-                this.ui.tell(new RoomsMessage(this.rooms), self());
+                sender().tell(new RoomsMessage(this.rooms), self());
                 break;
             case MACHINELIST:
                 this.room = rooms.get(message.getArg());
