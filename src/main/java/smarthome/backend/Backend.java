@@ -28,7 +28,7 @@ public class Backend extends AbstractActor {
         rooms.put(message.getName(), message.getConsumption());
         float total = 0;
         StringBuilder list = new StringBuilder("----------SMARTHOME CONSUMPTION---------\n");
-        list.append("ROOM\t\t\t\tCONSUMPTION\n");
+        list.append("ROOM\t\t\tCONSUMPTION\n");
         for(Map.Entry<String, Float> entry: rooms.entrySet()){
             int nameLength = 16;
             String space = " ";
