@@ -23,7 +23,7 @@ public class ControlPanel extends AbstractActor{
 
 
     private void activatePanel(ActivateMessage message){
-        this.backend = context().actorSelection("akka://Backend@192.168.56.101:2550/user/backend");
+        this.backend = context().actorSelection("akka.tcp://Backend@192.168.56.101:2550/user/backend");
         this.backend.tell(new ResponseMessage(false, "Control Panel Activated"), self());
         this.ui = context().actorOf(UserInterface.props(), "userInterface");
         ui.tell(new ActivateMessage(), self());
