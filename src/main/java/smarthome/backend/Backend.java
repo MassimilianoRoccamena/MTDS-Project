@@ -3,6 +3,9 @@ package smarthome.backend;
 import akka.actor.*;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ConsumptionMessage;
+import smarthome.messages.RequestMessage;
+import smarthome.messages.ResponseMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,11 +21,15 @@ public class Backend extends AbstractActor {
         return receiveBuilder()
                 .match(ActivateMessage.class, this::startBackend)
                 .match(ConsumptionMessage.class, this::handleMessages)
+                .match(ResponseMessage.class, this::printLog)
                 .build();
     }
 
     private void startBackend(ActivateMessage message){
         System.out.println("[LOG] Backend Server started and functional");
+    }
+    private void printLog(ResponseMessage message){
+        System.out.println("[LOG] " + message.getMessage());
     }
     private void handleMessages(ConsumptionMessage message){
         rooms.put(message.getName(), message.getConsumption());
