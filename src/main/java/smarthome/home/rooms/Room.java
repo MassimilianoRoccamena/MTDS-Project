@@ -17,7 +17,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public abstract class Room extends AbstractActor {
     public float desiredTemperature = 20;
     public float totalConsumption = 0;
-    public ActorSelection panel = context().actorSelection("akka.tcp://Panel@192.168.56.1:2552/user/controlPanel");
+    public ActorSelection panel = context().actorSelection("akka://Panel@192.168.56.1:2552/user/controlPanel");
     public String roomName;
     public Map<String, ActorRef> appliances = new HashMap<>();
     public final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);

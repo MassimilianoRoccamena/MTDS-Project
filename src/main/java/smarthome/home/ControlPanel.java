@@ -18,12 +18,13 @@ public class ControlPanel extends AbstractActor{
                 .match(ResponseMessage.class, this::showMessage)
                 .match(ActivateMessage.class, this::activatePanel)
                 .match(RequestMessage.class, this::requestHandle)
+                .match(Terminated.class, this::disconnectHandle)
                 .build();
     }
 
 
     private void activatePanel(ActivateMessage message){
-        this.backend = context().actorSelection("akka.tcp://Backend@192.168.56.101:2550/user/backend");
+        this.backend = context().actorSelection("akka://Backend@192.168.56.101:2550/user/backend");
         this.backend.tell(new ResponseMessage(false, "Control Panel Activated"), self());
         this.ui = context().actorOf(UserInterface.props(), "userInterface");
         ui.tell(new ActivateMessage(), self());
@@ -34,7 +35,7 @@ public class ControlPanel extends AbstractActor{
         switch (message.getType()){
             case NEWROOM:
                 this.rooms.put(message.getArg(), sender());
-                getContext().watch(sender());
+                context().watch(sender());
                 this.backend.tell(new ConsumptionMessage(message.getArg(), 0), self());
                 break;
             case ROOMSLIST:
@@ -52,6 +53,15 @@ public class ControlPanel extends AbstractActor{
         if(forward){
             this.room.tell(new RequestMessage(message.getType(), message.getArg()), self());
         }
+    }
+
+    private void disconnectHandle(Terminated message){
+        for (Map.Entry<String, ActorRef> entry : rooms.entrySet()) {
+            if (entry.getValue().equals(message.getActor())) {
+                rooms.remove(entry.getKey());
+            }
+        }
+
     }
 
     private void showMessage(ResponseMessage message){
