@@ -46,7 +46,7 @@ public class ControlPanel extends AbstractActor{
                     this.room = rooms.get(message.getArg());
                     forward = true;
                 }else{
-                    sender().tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
+                    this.ui.tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
                 }
                 break;
             case SWITCHMACHINE:
@@ -54,7 +54,7 @@ public class ControlPanel extends AbstractActor{
                 if (this.room != null){
                     forward = true;
                 }else {
-                    sender().tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
+                    this.ui.tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
                 }
                 break;
         }

@@ -83,7 +83,7 @@ public class UserInterface extends AbstractActor {
         Scanner scanner = new Scanner(System.in);
         switch (scanner.nextInt()){
             case 1:
-                panel.tell(new RequestMessage(MessageType.MACHINELIST, room), self());
+                this.panel.tell(new RequestMessage(MessageType.MACHINELIST, room), self());
                 break;
             case 2:
                 chooseAppliance();
@@ -96,7 +96,7 @@ public class UserInterface extends AbstractActor {
                 break;
             default:
                 System.out.println("[ERROR] Insert a valid function number");
-                panel.tell(new RequestMessage(MessageType.MACHINELIST, room), self());
+                this.panel.tell(new RequestMessage(MessageType.MACHINELIST, room), self());
         }
     }
     public void chooseAppliance(){
