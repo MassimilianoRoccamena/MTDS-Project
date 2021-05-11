@@ -17,7 +17,7 @@ public class Backend extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ActivateMessage.class, this::startBackend)
-                .match(ConsumptionMessage.class, this::handleMessages)
+                .match(ConsumptionMessage.class, this::updateRoom)
                 .match(ResponseMessage.class, this::printLog)
                 .match(RoomDisconnectedMessage.class, this::removeRoom)
                 .build();
@@ -29,7 +29,7 @@ public class Backend extends AbstractActor {
     private void printLog(ResponseMessage message){
         System.out.println("[LOG] " + message.getMessage());
     }
-    private void handleMessages(ConsumptionMessage message){
+    private void updateRoom(ConsumptionMessage message){
         rooms.put(message.getName(), message.getConsumption());
         printRooms();
     }
