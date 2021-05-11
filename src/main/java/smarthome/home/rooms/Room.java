@@ -119,7 +119,7 @@ public abstract class Room extends AbstractActor {
         list.append("\n---------APPLIANCES LIST---------\n");
 
         float totalConsumption = 0;
-        list.append("NAME\t\t\t\tSTATE\tCONSUMPTION\n");
+        list.append("NAME\t\t\tSTATE\t\tCONSUMPTION\n");
         for(Map.Entry<String, ActorRef> ref: this.appliances.entrySet()){
             int nameLength = 16;
             String space = " ";
