@@ -39,7 +39,7 @@ public class OrderService {
 
         String customerAddress = splittedMessage[1];
         DeliveryMan deliveryMan = deliveryManRepository.getRandom().get(0);
-        log.info("Order " + orderId.toString() + " assigned to delivery man" + deliveryMan.getId().toString());
+        log.info("Order " + orderId.toString() + " assigned to delivery man " + deliveryMan.getId().toString());
         Order order = new Order(orderId, deliveryMan.getId(), customerAddress);
         orderRepository.save(order);
     }
