@@ -42,12 +42,20 @@ public class ControlPanel extends AbstractActor{
                 sender().tell(new RoomsMessage(this.rooms), self());
                 break;
             case MACHINELIST:
-                this.room = rooms.get(message.getArg());
-                forward = true;
+                if(rooms.containsKey(message.getArg())){
+                    this.room = rooms.get(message.getArg());
+                    forward = true;
+                }else{
+                    sender().tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
+                }
                 break;
             case SWITCHMACHINE:
             case CHANGETEMPERATURE:
-                forward = true;
+                if (this.room != null){
+                    forward = true;
+                }else {
+                    sender().tell(new ResponseMessage(true, "[ERROR] The room has been shut down"), self());
+                }
                 break;
         }
         if(forward){
@@ -58,10 +66,11 @@ public class ControlPanel extends AbstractActor{
     private void disconnectHandle(Terminated message){
         for (Map.Entry<String, ActorRef> entry : rooms.entrySet()) {
             if (entry.getValue().equals(message.getActor())) {
+                this.backend.tell(new RoomDisconnectedMessage(entry.getKey()), self());
                 rooms.remove(entry.getKey());
             }
         }
-
+        this.room = null;
     }
 
     private void showMessage(ResponseMessage message){

@@ -48,14 +48,7 @@ public class UserInterface extends AbstractActor {
             Scanner scanner = new Scanner(System.in);
             name = scanner.nextLine();
             if(name.equals("1")){
-                try {
-                    scala.concurrent.Future<Object> waitingForRooms = ask(this.panel, new RequestMessage(MessageType.ROOMSLIST, null), 5000);
-                    RoomsMessage message = (RoomsMessage) waitingForRooms.result(timeout, null);
-                    this.rooms = message.getRooms();
-                }catch (Exception e){
-                    System.out.println("[ERROR] Could not get the rooms list");
-                    roomsList();
-                }
+                updateRoomsList();
             }
             else if(rooms.containsKey(name)){
                 room = false;
@@ -70,7 +63,11 @@ public class UserInterface extends AbstractActor {
 
     private void showMessage(ResponseMessage message){
         System.out.println(message.getMessage());
-        if(message.isArg()){
+        if (message.getMessage().contains("shut down")){
+            updateRoomsList();
+            roomsList();
+        }
+        else if(message.isArg()){
             chooseAppliance();
         }else {
             chooseFunction();
@@ -119,6 +116,18 @@ public class UserInterface extends AbstractActor {
             chooseTemperature();
         }
     }
+
+    private void updateRoomsList(){
+        try {
+            scala.concurrent.Future<Object> waitingForRooms = ask(this.panel, new RequestMessage(MessageType.ROOMSLIST, null), 5000);
+            RoomsMessage msg = (RoomsMessage) waitingForRooms.result(timeout, null);
+            this.rooms = msg.getRooms();
+        }catch (Exception e){
+            System.out.println("[ERROR] Could not get the rooms list");
+            roomsList();
+        }
+    }
+
     public static Props props() {
         return Props.create(UserInterface.class);
     }

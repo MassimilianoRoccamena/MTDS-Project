@@ -1,10 +1,7 @@
 package smarthome.backend;
 
 import akka.actor.*;
-import smarthome.messages.ActivateMessage;
-import smarthome.messages.ConsumptionMessage;
-import smarthome.messages.RequestMessage;
-import smarthome.messages.ResponseMessage;
+import smarthome.messages.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +19,7 @@ public class Backend extends AbstractActor {
                 .match(ActivateMessage.class, this::startBackend)
                 .match(ConsumptionMessage.class, this::handleMessages)
                 .match(ResponseMessage.class, this::printLog)
+                .match(RoomDisconnectedMessage.class, this::removeRoom)
                 .build();
     }
 
@@ -33,6 +31,14 @@ public class Backend extends AbstractActor {
     }
     private void handleMessages(ConsumptionMessage message){
         rooms.put(message.getName(), message.getConsumption());
+        printRooms();
+    }
+    private void removeRoom(RoomDisconnectedMessage message){
+        rooms.remove(message.getRoomName());
+        printRooms();
+    }
+
+    private void printRooms(){
         float total = 0;
         StringBuilder list = new StringBuilder("----------SMARTHOME CONSUMPTION---------\n");
         list.append("ROOM\t\t\tCONSUMPTION\n");
@@ -48,6 +54,7 @@ public class Backend extends AbstractActor {
         list.append("TOTAL CONSUMPTION: ").append(total).append("W\n\n");
         System.out.println(list);
     }
+
 
     public static Props props(){
         return Props.create(Backend.class);
