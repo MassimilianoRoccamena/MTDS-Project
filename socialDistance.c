@@ -592,6 +592,7 @@ void checkInfected(struct individual *individual, struct region *region, float s
 int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
+    double start = MPI_Wtime();
     int individuals = atoi(argv[1]);
     int infected = atoi(argv[2]);
     float areaWidth = atof(argv[3]);
@@ -824,5 +825,7 @@ int main(int argc, char **argv)
         //printf("[PROCESS %d] Barrier reached\n", rank);
     }
 
+    double end = MPI_Wtime();
+    printf("Elapsed time: %f\n", end - start);
     MPI_Finalize();
 }
