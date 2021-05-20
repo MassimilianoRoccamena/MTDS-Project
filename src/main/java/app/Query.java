@@ -52,18 +52,22 @@ public class Query
         df.show();
 
         // Q1
+        System.out.println("<--- QUERY1 --->\n");
+
+        final int horizon = 7;
         WindowSpec window = Window.partitionBy("country")
                                             .orderBy("day")
-                                            .rowsBetween(-3+1, 0);
+                                            .rowsBetween(-horizon+1, 0);
 
         df = df.withColumn("Q1", 
                                 avg("cases").over(window));
         
         df.persist();
-        System.out.println("<--- QUERY1 --->\n");
         df.show();
 
         // Q2
+        System.out.println("<--- QUERY2 --->\n");
+
         window = Window.partitionBy("country")
                         .orderBy("day");
 
@@ -79,18 +83,33 @@ public class Query
         df = df.drop("lagged");
 
         df.persist();
-        System.out.println("<--- QUERY2 --->\n");
         df.show();
 
         // Q3
-
-        df = df.groupBy("country").agg(sum("Q2"));
-
-        df = df.orderBy(desc("sum(Q2)")).limit(10).select("country", "sum(Q2)");
-
-        df.persist();
         System.out.println("<--- QUERY3 --->\n");
-        df.show();
+
+        df = df.filter("day != 0");
+        Dataset<Row> df2 = df.select("day").distinct().orderBy("day");
+        df2 = df2.withColumn("id", monotonically_increasing_id());
+
+        window = Window.partitionBy("day")
+                        .orderBy(desc("Q2"));
+        df = df.withColumn("rank", rank().over(window)).orderBy("day");
+
+        int top = 10;
+        Dataset<Row> df_temp;
+        for (int i=1; i<=top; i++)
+        {
+            df_temp = df.select("country").where("rank == " + i);
+            df_temp = df_temp.withColumn("id", monotonically_increasing_id());
+            df2 = df2.join(df_temp, "id");
+            df2 = df2.withColumnRenamed("country", "Q3-"+i);
+        }
+
+        df2 = df2.drop("id");
+
+        df2.persist();
+        df2.show();
         
         // Close
         spark.close();
