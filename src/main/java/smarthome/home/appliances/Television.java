@@ -4,6 +4,8 @@ import akka.actor.Props;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ResponseMessage;
 
+import java.time.Duration;
+
 public class Television extends Appliance {
 
     @Override
@@ -15,6 +17,9 @@ public class Television extends Appliance {
         this.isOn = false;
         this.functionWithTimer = false;
         this.functionWithTemperature = false;
+        this.notify_consumption = system
+                .scheduler()
+                .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), this::updateConsumption, system.dispatcher());
     }
 
     public static Props props(){

@@ -16,10 +16,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class Room extends AbstractActor {
     public float desiredTemperature = 20;
-    public float totalConsumption = 0;
     public ActorSelection panel = context().actorSelection("akka.tcp://Panel@192.168.56.1:2552/user/controlPanel");
     public String roomName;
     public Map<String, ActorRef> appliances = new HashMap<>();
+    public Map<ActorRef, Float> appliances_consumption = new HashMap<>();
+    public float totalConsumption;
     public final scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
     public final SupervisorStrategy strategy =
             new CustomSupervisorStrategy(10,
@@ -41,6 +42,7 @@ public abstract class Room extends AbstractActor {
                 .match(RequestMessage.class, this::menageRequest)
                 .match(ActivateMessage.class, this::activateRoom)
                 .match(ResponseMessage.class, this::applianceManage)
+                .match(ConsumptionMessage.class, this::updateConsumption)
                 .build();
     }
 
@@ -49,6 +51,21 @@ public abstract class Room extends AbstractActor {
         ActorRef ref = getContext().actorOf(prop, name);
         ref.tell(new ActivateMessage(), self());
         this.appliances.put(name, ref);
+        this.appliances_consumption.put(ref, (float) 0);
+    }
+    public void updateConsumption(ConsumptionMessage message){
+        float old_consumption = totalConsumption();
+        this.appliances_consumption.put(sender(), message.getConsumption());
+        if (totalConsumption() != old_consumption){
+            panel.tell(new ConsumptionMessage(this.roomName, message.getConsumption()), self());
+        }
+    }
+    public float totalConsumption(){
+        float total = 0;
+        for (Map.Entry<ActorRef, Float> entry : appliances_consumption.entrySet()) {
+            total += entry.getValue();
+        }
+        return total;
     }
     private boolean checkConflict(ActorRef appliance) {
         ActorRef thermostat = this.appliances.get("Thermostat");
@@ -102,15 +119,16 @@ public abstract class Room extends AbstractActor {
                 break;
             case SWITCHMACHINE:
                 response = switchAppliance(message.getArg());
+                sender().tell(new ConsumptionMessage(this.roomName, totalConsumption()), self());
                 break;
             case CHANGETEMPERATURE:
                 response = changeTemperature(message.getArg());
+                sender().tell(new ConsumptionMessage(this.roomName, totalConsumption()), self());
                 break;
             default:
                 response = new ResponseMessage(false, "Wrong request");
                 break;
         }
-        sender().tell(new ConsumptionMessage(this.roomName, this.totalConsumption), self());
         sender().tell(response, self());
     }
     private ResponseMessage getAppliancesList() {
@@ -139,7 +157,7 @@ public abstract class Room extends AbstractActor {
         }
         this.totalConsumption = totalConsumption;
         list.append("---------------------------------\n");
-        list.append("TOTAL CONSUMPTION: ").append(totalConsumption).append("W\n");
+        list.append("TOTAL CONSUMPTION: ").append(this.totalConsumption).append("W\n");
         list.append("DESIRED TEMPERATURE: ").append(this.desiredTemperature).append("°C\n");
         try {
             list.append("TEMPERATURE: ").append(this.getTemperature()).append("°C\n");

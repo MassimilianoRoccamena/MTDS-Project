@@ -6,6 +6,8 @@ import smarthome.messages.ActivateMessage;
 import smarthome.messages.RequestMessage;
 import smarthome.messages.ResponseMessage;
 
+import java.time.Duration;
+
 public class Thermostat extends Appliance {
 
     private float temperature;
@@ -20,7 +22,7 @@ public class Thermostat extends Appliance {
                 switchAppliance();
                 break;
             case GETCONSUMPTION:
-                sender().tell(this.getConsumption(),self());
+                sender().tell(this.consumption,self());
                 break;
             case GETTEMPERATURE:
                 sender().tell(this.temperature, self());
@@ -42,6 +44,9 @@ public class Thermostat extends Appliance {
         this.isOn = false;
         this.room = sender();
         this.temperature = 20;
+        this.notify_consumption = system
+                .scheduler()
+                .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), this::updateConsumption, system.dispatcher());
     }
 
     @Override

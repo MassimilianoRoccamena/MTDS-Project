@@ -2,6 +2,7 @@ package smarthome.home.appliances;
 
 import akka.actor.*;
 import smarthome.messages.ActivateMessage;
+import smarthome.messages.ConsumptionMessage;
 import smarthome.messages.RequestMessage;
 import smarthome.messages.ResponseMessage;
 
@@ -12,12 +13,14 @@ import java.util.Random;
 public abstract class Appliance extends AbstractActor {
     public boolean isOn;
     public String name;
+    public float consumption;
     public boolean functionWithTimer;
     public int durationMilli;
     public boolean functionWithTemperature;
     public ActorRef room;
     public ActorSystem system;
     Cancellable functioningProcess;
+    Cancellable notify_consumption;
 
     @Override
     public Receive createReceive() {
@@ -29,10 +32,15 @@ public abstract class Appliance extends AbstractActor {
 
     public float getConsumption(){
         float cons = 0.0f;
-        if(this.isOn) {
-            Random random = new Random();
-            cons = random.nextInt(49)+1 + random.nextFloat();
+        if(this.isOn ) {
+            if(this.consumption == cons){
+                Random random = new Random();
+                cons = random.nextInt(49)+1 + random.nextFloat();
+            }else {
+                cons = this.consumption;
+            }
         }
+        this.consumption = cons;
         return cons;
     }
     public void handleRequest(RequestMessage message){
@@ -44,7 +52,7 @@ public abstract class Appliance extends AbstractActor {
                 switchAppliance();
                 break;
             case GETCONSUMPTION:
-                sender().tell(this.getConsumption(),self());
+                sender().tell(getConsumption(),self());
         }
     }
     public void switchAppliance(){
@@ -81,6 +89,9 @@ public abstract class Appliance extends AbstractActor {
     public void notifyStart(boolean timer){
         sender().tell(new ResponseMessage(timer, this.name + " has started working!"),self());
 
+    }
+    public void updateConsumption(){
+        room.tell(new ConsumptionMessage(this.name, getConsumption()), self());
     }
     public void notifyChangeTemperature(ActorRef sender){}
     public void activate(ActivateMessage message){}

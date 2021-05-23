@@ -4,6 +4,8 @@ import akka.actor.Props;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ResponseMessage;
 
+import java.time.Duration;
+
 public class AirConditioning extends Appliance {
 
     @Override
@@ -15,6 +17,9 @@ public class AirConditioning extends Appliance {
         this.isOn = false;
         this.functionWithTimer = false;
         this.functionWithTemperature = true;
+        this.notify_consumption = system
+                .scheduler()
+                .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), this::updateConsumption, system.dispatcher());
     }
 
     @Override

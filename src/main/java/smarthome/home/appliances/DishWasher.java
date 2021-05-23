@@ -4,6 +4,8 @@ import akka.actor.Props;
 import smarthome.messages.ActivateMessage;
 import smarthome.messages.ResponseMessage;
 
+import java.time.Duration;
+
 public class DishWasher extends Appliance {
     @Override
     public void activate(ActivateMessage message) {
@@ -15,6 +17,9 @@ public class DishWasher extends Appliance {
         this.functionWithTimer = true;
         this.durationMilli = 10000;
         this.functionWithTemperature = false;
+        this.notify_consumption = system
+                .scheduler()
+                .scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(1000), this::updateConsumption, system.dispatcher());
     }
 
     public static Props props(){
